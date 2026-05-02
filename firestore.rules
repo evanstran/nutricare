@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        // Bootstrap admin email
+        request.auth.token.email == 'quocvinh.tran87@gmail.com' ||
+        // Check role field in users collection with existence check to avoid crashes
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin')
+      );
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      function isValidProfile(data) {
+        return data.uid == userId
+          && data.name is string && data.name.size() > 0 && data.name.size() < 100
+          && data.email is string && data.email.size() > 0 && data.email.size() < 100
+          && (isAdmin() || !('role' in data) || data.role == 'user');
+      }
+
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId 
+        && isValidProfile(request.resource.data)
+        && request.resource.data.keys().hasAll(['uid', 'email', 'name'])
+        && (!('subscriptionTier' in request.resource.data) || request.resource.data.subscriptionTier == 'free');
+      
+      allow update: if (isOwner(userId) || isAdmin())
+        && isValidProfile(request.resource.data)
+        && (isAdmin() || (
+            // Restricted & Immutable fields
+            incoming().get('createdAt', existing().get('createdAt', '')) == existing().get('createdAt', '') &&
+            incoming().get('email', existing().email) == existing().email &&
+            incoming().get('uid', existing().uid) == existing().uid &&
+            // Total control over which keys can change
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'age', 'gender', 'height', 'weight', 'diseases', 'allergies', 'habits', 'activityLevel', 'subscriptionTier', 'planEndDate', 'createdAt'])
+           ));
+    }
+
+    // Diseases (Master data)
+    match /diseases/{diseaseId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Meal Plans
+    match /mealPlans/{planId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid 
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Compliance Logs
+    match /complianceLogs/{logId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isSignedIn() && resource.data.userId == request.auth.uid 
+        && request.resource.data.userId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

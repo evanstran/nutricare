@@ -1,0 +1,83 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile and health information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "age": { "type": "number" },
+        "gender": { "type": "string" },
+        "height": { "type": "number" },
+        "weight": { "type": "number" },
+        "diseases": { "type": "array" },
+        "allergies": { "type": "array" },
+        "habits": { "type": "string" },
+        "activityLevel": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email"]
+    },
+    "Disease": {
+      "title": "Disease Info",
+      "description": "Information about a specific disease group",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "description": { "type": "string" },
+        "shouldEat": { "type": "array" },
+        "shouldAvoid": { "type": "array" },
+        "sampleMenu": { "type": "array" }
+      }
+    },
+    "MealPlan": {
+      "title": "Meal Plan",
+      "description": "Daily meal recommendations for a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "breakfast": { "type": "string" },
+        "lunch": { "type": "string" },
+        "dinner": { "type": "string" },
+        "snacks": { "type": "array" },
+        "aiTips": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "ComplianceLog": {
+      "title": "Compliance Log",
+      "description": "Tracking user meals",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "mealType": { "type": "string" },
+        "status": { "type": "string", "enum": ["followed", "skipped", "modified"] },
+        "notes": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/diseases/{diseaseId}": {
+      "schema": "Disease",
+      "description": "Disease information master data"
+    },
+    "/mealPlans/{planId}": {
+      "schema": "MealPlan",
+      "description": "Daily meal plans"
+    },
+    "/complianceLogs/{logId}": {
+      "schema": "ComplianceLog",
+      "description": "Tracking history"
+    }
+  }
+}
