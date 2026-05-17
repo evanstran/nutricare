@@ -13,6 +13,8 @@ export interface UserProfile {
   subscriptionTier: 'free' | 'extra' | 'plus' | 'unlimited';
   planEndDate?: string;
   role?: 'admin' | 'user';
+  likedIngredients?: string[];
+  dislikedIngredients?: string[];
   createdAt: string;
 }
 
@@ -32,6 +34,13 @@ export interface NutritionInfo {
     iron?: string;
     potassium?: string;
   };
+}
+
+export interface HealthTip {
+  title: string;
+  content: string;
+  category: 'nutrition' | 'lifestyle' | 'warning';
+  icon?: string;
 }
 
 export interface MealPlan {

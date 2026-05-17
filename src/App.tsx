@@ -28,6 +28,7 @@ import {
   Users,
   Star,
   ShieldCheck,
+  Shield,
   ChevronDown,
   LayoutGrid,
   Search,
@@ -35,7 +36,11 @@ import {
   Apple,
   Wind,
   Moon,
-  Sun
+  Sun,
+  Scale,
+  Coffee,
+  TrendingUp,
+  Stethoscope as DoctorIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -53,7 +58,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import type { UserProfile, MealPlan, ComplianceLog, NutritionInfo, Disease } from './types';
+import type { UserProfile, MealPlan, ComplianceLog, NutritionInfo, Disease, HealthTip } from './types';
 
 // Utils
 enum OperationType {
@@ -431,6 +436,118 @@ const MealDetailModal = ({ isOpen, onClose, meal }: { isOpen: boolean, onClose: 
   );
 };
 
+const HealthArticlesSection = ({ tips, loading }: { tips: HealthTip[], loading: boolean }) => {
+  const IconComponent = (iconName: string) => {
+    const icons: any = { Heart, Activity, Utensils, Zap, Leaf, ShieldCheck, Apple, Wind, Moon, Sun, Stethoscope };
+    const Icon = icons[iconName] || Activity;
+    return <Icon size={20} />;
+  };
+
+  return (
+    <section className="col-span-12">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+          <Sparkles size={16} className="text-amber-500" />
+          Kiến thức dành riêng cho bạn
+        </h3>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm animate-pulse space-y-3">
+              <div className="w-10 h-10 bg-slate-100 rounded-xl" />
+              <div className="h-4 bg-slate-100 rounded w-3/4" />
+              <div className="h-3 bg-slate-50 rounded w-full" />
+              <div className="h-3 bg-slate-50 rounded w-5/6" />
+            </div>
+          ))
+        ) : tips.length > 0 ? (
+          tips.map((tip, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className={`bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group overflow-hidden relative cursor-default h-full flex flex-col`}
+            >
+              <div className={`absolute top-0 right-0 w-24 h-24 blur-3xl opacity-10 rounded-full translate-x-1/2 -translate-y-1/2 ${
+                tip.category === 'warning' ? 'bg-rose-500' : tip.category === 'nutrition' ? 'bg-emerald-500' : 'bg-blue-500'
+              }`} />
+              
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 ${
+                tip.category === 'warning' ? 'bg-rose-50 text-rose-500' : tip.category === 'nutrition' ? 'bg-emerald-50 text-emerald-500' : 'bg-blue-50 text-blue-500'
+              }`}>
+                {IconComponent(tip.icon || '')}
+              </div>
+              <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${
+                tip.category === 'warning' ? 'text-rose-400' : tip.category === 'nutrition' ? 'text-emerald-400' : 'text-blue-400'
+              }`}>
+                {tip.category === 'warning' ? 'Cảnh báo' : tip.category === 'nutrition' ? 'Dinh dưỡng' : 'Lối sống'}
+              </p>
+              <h4 className="text-sm font-black text-slate-800 mb-2 leading-tight">{tip.title}</h4>
+              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                {tip.content}
+              </p>
+            </motion.div>
+          ))
+        ) : (
+          <div className="col-span-full p-8 bg-slate-50 border border-dashed border-slate-200 rounded-2xl text-center">
+             <p className="text-xs text-slate-400 font-bold uppercase tracking-widest italic leading-relaxed">
+               AI đang biên soạn lời khuyên dựa trên hồ sơ của bạn...
+             </p>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
+const AITipsSection = ({ tips }: { tips?: string }) => {
+  if (!tips) return null;
+
+  return (
+    <motion.section 
+      initial={{ opacity: 0, scale: 0.98 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="col-span-12 mb-2"
+    >
+      <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-emerald-600 to-emerald-500 rounded-[2rem] p-8 shadow-xl shadow-emerald-100 group">
+        {/* Animated background elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform duration-700" />
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-emerald-400/20 blur-2xl rounded-full -translate-x-1/2 translate-y-1/2 group-hover:scale-125 transition-transform duration-700" />
+        
+        <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center gap-6">
+          <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0 shadow-inner border border-white/30 group-hover:rotate-6 transition-transform">
+            <Sparkles size={32} className="text-white animate-pulse" />
+          </div>
+          
+          <div className="flex-grow">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded text-[9px] font-black text-white uppercase tracking-[0.2em] border border-white/10">
+                NutriCare AI Insight
+              </span>
+              <div className="h-px bg-white/20 flex-grow" />
+            </div>
+            <h3 className="text-white text-lg md:text-xl font-bold leading-tight mb-2 tracking-tight">
+              Lời khuyên vàng cho sức khỏe của bạn
+            </h3>
+            <p className="text-emerald-50 text-sm md:text-base font-medium leading-relaxed italic max-w-3xl opacity-90">
+              "{tips}"
+            </p>
+          </div>
+          
+          <div className="shrink-0 w-full md:w-auto">
+            <button className="w-full md:w-auto px-6 py-3 bg-white text-emerald-700 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-emerald-50 transition-all active:scale-95 shadow-lg shadow-emerald-900/10 flex items-center justify-center gap-2">
+              <CheckCircle2 size={16} /> Mark as seen
+            </button>
+          </div>
+        </div>
+      </div>
+    </motion.section>
+  );
+};
+
 const DISEASE_CATEGORIES = [
   { id: 'digestive', label: 'Tiêu hóa', icon: 'Apple' },
   { id: 'metabolic', label: 'Chuyển hóa', icon: 'Zap' },
@@ -516,7 +633,7 @@ const DiseaseSelector = ({ selected, onChange }: { selected: string[], onChange:
         </button>
       </div>
 
-      {/* Suggestions Dropdown */}
+              {/* Suggestions Dropdown */}
       {searchTerm && (
         <div className="bg-white border border-slate-100 rounded-xl max-h-48 overflow-y-auto shadow-sm p-2 space-y-1 z-50 relative">
           {filteredOptions.length > 0 ? filteredOptions.map(d => (
@@ -525,11 +642,9 @@ const DiseaseSelector = ({ selected, onChange }: { selected: string[], onChange:
               onClick={() => toggleDisease(d.name)}
               className="w-full text-left p-2 rounded-lg hover:bg-emerald-50 transition-colors flex items-center gap-3"
             >
-              {d.imageUrl && (
-                <div className="w-8 h-8 rounded-md overflow-hidden bg-slate-100 shrink-0">
-                   <img src={d.imageUrl} alt={d.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                </div>
-              )}
+              <div className="w-8 h-8 rounded-md bg-slate-50 shrink-0 flex items-center justify-center">
+                <Activity size={14} className="text-slate-300" />
+              </div>
               <div className="flex-1">
                 <p className="text-xs font-bold text-slate-700">{d.name}</p>
                 <p className="text-[10px] text-slate-400 line-clamp-1">{d.description}</p>
@@ -568,11 +683,9 @@ const DiseaseSelector = ({ selected, onChange }: { selected: string[], onChange:
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   exit={{ scale: 0.8, opacity: 0 }}
-                  className="inline-flex items-center gap-1.5 pl-1.5 pr-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm group"
+                  className="inline-flex items-center gap-1.5 pl-2 pr-3 py-1 bg-emerald-600 text-white rounded-lg text-xs font-bold shadow-sm group"
                 >
-                  {d?.imageUrl && (
-                    <img src={d.imageUrl} className="w-5 h-5 rounded object-cover border border-white/20" alt="" referrerPolicy="no-referrer" />
-                  )}
+                  <Activity size={10} className="opacity-70" />
                   {dName}
                   <button 
                     onClick={() => toggleDisease(dName)} 
@@ -710,12 +823,8 @@ const DiseaseSelector = ({ selected, onChange }: { selected: string[], onChange:
                         onClick={() => toggleDisease(d.name)}
                         className={`group relative flex items-center gap-3 md:gap-4 p-3 md:p-4 rounded-2xl border-2 transition-all text-left ${isSelected ? 'border-emerald-600 bg-emerald-50' : 'border-slate-50 bg-white hover:border-emerald-100 shadow-sm hover:shadow-md'}`}
                       >
-                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-slate-100 shrink-0 border border-slate-100 flex items-center justify-center">
-                          {d.imageUrl ? (
-                            <img src={d.imageUrl} alt={d.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" loading="lazy" />
-                          ) : (
-                            <Activity size={20} className="text-slate-300" />
-                          )}
+                        <div className="w-12 h-12 rounded-xl bg-slate-100 shrink-0 border border-slate-100 flex items-center justify-center">
+                          <Activity size={20} className="text-slate-300" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm font-black tracking-tight truncate ${isSelected ? 'text-emerald-900' : 'text-slate-800'}`}>{d.name}</p>
@@ -978,6 +1087,78 @@ const AIChatbot = ({ profile }: { profile: UserProfile | null }) => {
   );
 };
 
+interface LandingStepCardProps {
+  item: {
+    step: string;
+    title: string;
+    desc: string;
+    img: string;
+    details: string[];
+  };
+}
+
+const LandingStepCard: React.FC<LandingStepCardProps> = ({ item }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    <div className="flex flex-col gap-6 group">
+      <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden">
+        <img src={item.img} className="w-full h-full object-cover grayscale transition-all group-hover:grayscale-0 group-hover:scale-105" alt="" referrerPolicy="no-referrer" />
+        <div className="absolute top-6 left-6 text-5xl font-black text-white/50">{item.step}</div>
+      </div>
+      <div>
+        <h3 className="text-xl font-black text-white mb-3">{item.title}</h3>
+        <div 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="cursor-pointer group/content"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <p className="text-sm text-slate-400 leading-relaxed font-medium flex-1">
+              {item.desc}
+            </p>
+            <motion.div 
+              animate={{ rotate: isExpanded ? 180 : 0 }}
+              className={`mt-1 shrink-0 p-1 rounded-full bg-white/5 text-slate-500 group-hover/content:text-emerald-400 group-hover/content:bg-white/10 transition-colors`}
+            >
+              <ChevronDown size={14} />
+            </motion.div>
+          </div>
+          
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                animate={{ height: "auto", opacity: 1, marginTop: 16 }}
+                exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                transition={{ duration: 0.3, ease: [0.04, 0.62, 0.23, 0.98] }}
+                className="overflow-hidden"
+              >
+                <div className="pt-4 border-t border-white/10 space-y-3">
+                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Chi tiết giải pháp</p>
+                  <ul className="space-y-2">
+                    {item.details.map((detail: string, idx: number) => (
+                      <motion.li 
+                        key={idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.1 }}
+                        className="flex items-center gap-2 text-[11px] text-slate-400 font-medium"
+                      >
+                        <div className="w-1 h-1 bg-emerald-500 rounded-full" />
+                        {detail}
+                      </motion.li>
+                    ))}
+                  </ul>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -989,6 +1170,8 @@ export default function App() {
   const [editingMeal, setEditingMeal] = useState<{ type: string, content: string } | null>(null);
   const [selectedMealDetail, setSelectedMealDetail] = useState<{ label: string, type: string, content: string, nutrition?: NutritionInfo, ingredients?: string[] } | null>(null);
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [healthTips, setHealthTips] = useState<HealthTip[]>([]);
+  const [loadingTips, setLoadingTips] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
@@ -1048,6 +1231,56 @@ export default function App() {
     }
   }, [selectedDate, user, view]);
 
+  const generateHealthTips = async (p: UserProfile) => {
+    setLoadingTips(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const prompt = `
+        Dựa trên hồ sơ người dùng NutriCare:
+        - Tên: ${p.name}
+        - Bệnh lý: ${p.diseases.join(", ")}
+        - Dị ứng: ${p.allergies.join(", ")}
+        - Mức độ vận động: ${p.activityLevel}
+        Cung cấp 3 bài viết/lời khuyên sức khỏe ngắn gọn, súc tích (tiếng Việt).
+        Định dạng JSON: Array<{title: string, content: string, category: 'nutrition'|'lifestyle'|'warning', icon: string}>
+        Sử dụng code icon từ Lucide (ví dụ: 'Apple', 'Zap', 'Activity', 'ShieldCheck', 'Moon', 'Sun', 'Wind').
+      `;
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                content: { type: Type.STRING },
+                category: { type: Type.STRING },
+                icon: { type: Type.STRING }
+              },
+              required: ["title", "content", "category", "icon"]
+            }
+          }
+        }
+      });
+      const text = response.text || "[]";
+      const data = JSON.parse(text);
+      setHealthTips(data);
+    } catch (error) {
+      console.error("Error generating tips:", error);
+    } finally {
+      setLoadingTips(false);
+    }
+  };
+
+  useEffect(() => {
+    if (profile && view === 'dashboard' && healthTips.length === 0) {
+      generateHealthTips(profile);
+    }
+  }, [profile, view, healthTips.length]);
+
   useEffect(() => {
     if (user && view === 'dashboard') {
       const unsub = fetchLogs(user.uid);
@@ -1092,6 +1325,8 @@ export default function App() {
       activityLevel: data.activityLevel || 'moderate',
       subscriptionTier: 'free',
       planEndDate: sevenDaysLater.toISOString(),
+      likedIngredients: data.likedIngredients || [],
+      dislikedIngredients: data.dislikedIngredients || [],
       createdAt: now.toISOString()
     };
 
@@ -1123,14 +1358,18 @@ export default function App() {
         - Dị ứng: ${p.allergies.join(", ")}
         - Thói quen: ${p.habits}
         - Mức độ vận động: ${p.activityLevel}
+        - Nguyên liệu yêu thích: ${(p.likedIngredients || []).join(", ") || "Không có"}
+        - Nguyên liệu không thích: ${(p.dislikedIngredients || []).join(", ") || "Không có"}
 
         Yêu cầu:
         1. Tuân thủ phác đồ dinh dưỡng cho người đang mắc các bệnh trên.
-        2. Loại bỏ hoàn toàn thực phẩm gây dị ứng.
+        2. Loại bỏ hoàn toàn thực phẩm gây dị ứng và ưu tiên loại bỏ các nguyên liệu không thích.
         3. Phân biệt rõ món nên ăn và món nên tránh.
         4. Tỉ lệ dinh dưỡng phù hợp với chỉ số BMI và mức vận động.
         5. Ước tính thành phần dinh dưỡng chi tiết (Calories, Protein, Carbs, Fat, Fiber, Sugar, Sodium và các Vitamin/khoáng chất quan trọng) cho từng bữa ăn.
         6. Cung cấp danh sách nguyên liệu (ingredients) chi tiết cho từng món ăn trong bữa.
+        7. Ưu tiên các nguyên liệu yêu thích nhưng phải đảm bảo ĐA DẠNG món ăn để tránh nhàm chán (taste fatigue).
+        8. Đảm bảo các món ăn luân phiên, không lặp lại nguyên liệu chính quá nhiều trong cùng 1 ngày và khuyến khích sự thay đổi giữa các ngày.
       `;
 
       const response = await ai.models.generateContent({
@@ -1537,31 +1776,37 @@ export default function App() {
                   step: "01",
                   title: "Nhập dữ liệu sức khỏe",
                   desc: "Chỉ mất 2 phút để cập nhật các chỉ số BMI, bệnh lý và thói quen vận động của bạn.",
-                  img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400"
+                  img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400",
+                  details: [
+                    "Phân tích BMI và thành phần cơ thể chuyên sâu",
+                    "Số hóa bệnh án và lịch sử dị ứng thực phẩm",
+                    "Xác định ngưỡng calo tiêu thụ tối ưu (BMR/TDEE)"
+                  ]
                 },
                 { 
                   step: "02",
                   title: "Phân tích bởi AI",
                   desc: "Hệ thống AI xử lý hàng nghìn quy tắc dinh dưỡng để tạo ra chiến lược ăn uống an toàn nhất.",
-                  img: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=400"
+                  img: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=400",
+                  details: [
+                    "Đối soát 15,000+ thành phần dinh dưỡng chuẩn y khoa",
+                    "Tự động loại bỏ các tác nhân gây kích ứng bệnh lý",
+                    "Ưu tiên các nhóm thực phẩm hỗ trợ điều trị tự nhiên"
+                  ]
                 },
                 { 
                   step: "03",
                   title: "Thực thi & Theo dõi",
                   desc: "Nhận thực đơn mỗi ngày, báo cáo tiến độ và điều chỉnh linh hoạt theo trạng thái cơ thể.",
-                  img: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=400"
+                  img: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=400",
+                  details: [
+                    "Nhắc nhở thông minh: Uống nước, dùng thuốc, vận động",
+                    "Biểu đồ tuân thủ và tiến triển sức khỏe hàng tuần",
+                    "Hỗ trợ thay đổi món ăn linh hoạt theo sở thích cá nhân"
+                  ]
                 }
               ].map((item, i) => (
-                <div key={i} className="flex flex-col gap-6 group">
-                  <div className="relative aspect-[4/5] rounded-[2rem] overflow-hidden">
-                    <img src={item.img} className="w-full h-full object-cover grayscale transition-all group-hover:grayscale-0 group-hover:scale-105" alt="" />
-                    <div className="absolute top-6 left-6 text-5xl font-black text-white/50">{item.step}</div>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black text-white mb-3">{item.title}</h3>
-                    <p className="text-sm text-slate-400 leading-relaxed font-medium">{item.desc}</p>
-                  </div>
-                </div>
+                <LandingStepCard key={i} item={item} />
               ))}
             </div>
           </div>
@@ -1953,6 +2198,8 @@ export default function App() {
               <main className="col-span-12 lg:col-span-9 flex flex-col gap-6">
                 <DaySelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
+                {mealPlan && <AITipsSection tips={mealPlan.aiTips} />}
+
                 <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
                   <div className="flex justify-between items-end mb-6">
                     <div>
@@ -2139,6 +2386,8 @@ export default function App() {
                   />
                 </section>
 
+                <HealthArticlesSection tips={healthTips} loading={loadingTips} />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Avoid section */}
                   <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col">
@@ -2170,10 +2419,6 @@ export default function App() {
                     <div className="space-y-3">
                       {mealPlan ? (
                         <>
-                          <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
-                            <p className="text-xs font-bold text-emerald-800 uppercase mb-2">Lời khuyên AI</p>
-                            <p className="text-sm text-emerald-900 leading-relaxed italic">"{mealPlan.aiTips}"</p>
-                          </div>
                           <div className="flex items-center justify-between p-3 border border-slate-100 rounded-xl">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
@@ -2181,7 +2426,17 @@ export default function App() {
                               </div>
                               <p className="text-sm font-medium">Uống 200ml nước ấm</p>
                             </div>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase">Định kỳ</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Sau mỗi bữa</span>
+                          </div>
+                   
+                          <div className="flex items-center justify-between p-3 border border-slate-100 rounded-xl">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center">
+                                <Activity size={18} />
+                              </div>
+                              <p className="text-sm font-medium">Đi bộ nhẹ 10 phút</p>
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase">Chiều tối</span>
                           </div>
                         </>
                       ) : (
@@ -2244,7 +2499,7 @@ export default function App() {
 }
 
 function OnboardingScreen({ onSubmit, user }: { onSubmit: (d: Partial<UserProfile>) => void, user: User }) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [data, setData] = useState<Partial<UserProfile>>({
     name: user.displayName || '',
     email: user.email || '',
@@ -2255,45 +2510,126 @@ function OnboardingScreen({ onSubmit, user }: { onSubmit: (d: Partial<UserProfil
     diseases: [],
     allergies: [],
     habits: '',
-    activityLevel: 'moderate'
+    activityLevel: 'moderate',
+    likedIngredients: [],
+    dislikedIngredients: []
   });
 
   const next = () => setStep(s => s + 1);
   const prev = () => setStep(s => s - 1);
 
+  const steps = [
+    { title: 'Chào mừng', icon: Sparkles },
+    { title: 'Cá nhân', icon: UserIcon },
+    { title: 'Chỉ số', icon: Scale },
+    { title: 'Sức khỏe', icon: DoctorIcon },
+    { title: 'Sở thích', icon: Heart }
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center p-6 pt-12 relative">
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center p-6 pt-12 relative overflow-x-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-0 left-0 w-full h-64 bg-gradient-to-b from-emerald-50 to-transparent -z-10" />
+
       <button 
         onClick={() => auth.signOut()}
         className="absolute top-6 left-6 flex items-center gap-2 text-slate-400 hover:text-rose-500 transition-colors font-black text-[10px] uppercase tracking-widest"
       >
         <LogOut size={16} />
-        Thoát về trang chủ
+        Thoát
       </button>
 
       <div className="max-w-md w-full">
         {/* Progress */}
-        <div className="flex gap-2 mb-12">
-          {[1, 2, 3].map(i => (
-            <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${step >= i ? 'bg-emerald-600' : 'bg-slate-200'}`} />
-          ))}
+        <div className="flex flex-col gap-6 mb-10">
+          <div className="flex justify-between items-center bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+            {steps.map((s, i) => (
+              <div key={i} className="flex flex-col items-center gap-1.5 flex-1 relative">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500 z-10 ${
+                  step === i ? 'bg-emerald-600 text-white scale-110 shadow-lg shadow-emerald-200' :
+                  step > i ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-50 text-slate-300'
+                }`}>
+                  {step > i ? <CheckCircle2 size={16} /> : <s.icon size={16} />}
+                </div>
+                <span className={`text-[8px] font-black uppercase tracking-tighter transition-colors ${step === i ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  {s.title}
+                </span>
+                {i < steps.length - 1 && (
+                  <div className={`absolute top-4 left-1/2 w-full h-0.5 -z-0 ${step > i ? 'bg-emerald-100' : 'bg-slate-100'}`} />
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         <AnimatePresence mode="wait">
+          {step === 0 && (
+            <motion.div 
+              key="step0"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -100 }}
+              className="geometric-card p-8 bg-white border border-slate-100 shadow-xl overflow-hidden relative"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2" />
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 bg-emerald-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-200 mb-6">
+                  <Sparkles size={32} />
+                </div>
+                
+                <h2 className="text-3xl font-black text-slate-900 leading-tight mb-4 tracking-tight">Chào mừng bạn đến với NutriCare!</h2>
+                <p className="text-sm text-slate-500 mb-8 leading-relaxed">Giải pháp AI đồng hành cùng sức khỏe và chế độ dinh dưỡng chuyên biệt của bạn.</p>
+
+                <div className="space-y-4 mb-10">
+                  {[
+                    { icon: ShieldCheck, title: 'Thực đơn chuyên biệt', desc: 'Dựa trên tình trạng bệnh lý và dị ứng của riêng bạn.' },
+                    { icon: Zap, title: 'AI Thông minh', desc: 'Phân tích thành phần dinh dưỡng và nguyên liệu chi tiết.' },
+                    { icon: Activity, title: 'Theo dõi tiến độ', desc: 'Đánh dấu sự tuân thủ và nhận lời khuyên vàng mỗi ngày.' }
+                  ].map((feat, i) => (
+                    <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 transition-colors group">
+                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shrink-0 shadow-sm border border-slate-100 group-hover:border-emerald-100 text-emerald-600">
+                        <feat.icon size={20} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-slate-800 tracking-tight">{feat.title}</h4>
+                        <p className="text-xs text-slate-500 font-medium">{feat.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <button 
+                  onClick={next}
+                  className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-slate-800 transition-all active:scale-95 flex items-center justify-center gap-2 group"
+                >
+                  Bắt đầu thiết lập <ChevronRight size={18} className="transition-transform group-hover:translate-x-1" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           {step === 1 && (
             <motion.div 
               key="step1"
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="geometric-card p-8"
+              className="geometric-card p-8 border border-slate-100 shadow-xl"
             >
-              <h2 className="text-2xl font-bold text-slate-900 leading-tight mb-2">Chào bạn!</h2>
-              <p className="text-sm text-slate-500 mb-6">Hãy giới thiệu bản thân để NutriCare hiểu bạn hơn nhé.</p>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                  <UserIcon size={20} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 leading-tight">Về bạn</h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Personal Profile</p>
+                </div>
+              </div>
               
               <MedicalDisclaimer />
 
-              <div className="space-y-6 mt-6">
+              <div className="space-y-6 mt-8">
                 <div className="relative">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Họ và tên</label>
                   <input 
@@ -2304,36 +2640,54 @@ function OnboardingScreen({ onSubmit, user }: { onSubmit: (d: Partial<UserProfil
                     className="w-full bg-slate-50 border border-slate-100 focus:border-emerald-500 focus:bg-white rounded-xl p-4 transition-all outline-none text-slate-800 font-medium"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-6">
                   <div className="relative">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Tuổi</label>
-                    <input 
-                      type="number" 
-                      value={data.age} 
-                      onChange={e => setData({...data, age: Number(e.target.value)})}
-                      className="w-full bg-slate-50 border border-slate-100 focus:border-emerald-500 focus:bg-white rounded-xl p-4 transition-all outline-none text-slate-800 font-medium"
-                    />
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Tuổi của bạn</label>
+                    <div className="flex items-center gap-4">
+                      <input 
+                        type="range"
+                        min="1"
+                        max="100"
+                        value={data.age}
+                        onChange={e => setData({...data, age: Number(e.target.value)})}
+                        className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                      />
+                      <span className="w-12 h-10 bg-emerald-50 text-emerald-700 rounded-lg flex items-center justify-center font-black text-sm">
+                        {data.age}
+                      </span>
+                    </div>
                   </div>
                   <div className="relative">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Giới tính</label>
-                    <select 
-                      value={data.gender} 
-                      onChange={e => setData({...data, gender: e.target.value as any})}
-                      className="w-full bg-slate-50 border border-slate-100 focus:border-emerald-500 focus:bg-white rounded-xl p-4 transition-all outline-none text-slate-800 font-medium appearance-none"
-                    >
-                      <option value="male">Nam</option>
-                      <option value="female">Nữ</option>
-                      <option value="other">Khác</option>
-                    </select>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block text-center">Giới tính</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { value: 'male', label: 'Nam', icon: '♂️' },
+                        { value: 'female', label: 'Nữ', icon: '♀️' },
+                        { value: 'other', label: 'Khác', icon: '✨' }
+                      ].map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => setData({...data, gender: opt.value as any})}
+                          className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1 ${
+                            data.gender === opt.value ? 'border-emerald-600 bg-emerald-50' : 'border-slate-50 bg-slate-50'
+                          }`}
+                        >
+                          <span className="text-xl">{opt.icon}</span>
+                          <span className={`text-[10px] font-black uppercase tracking-tight ${data.gender === opt.value ? 'text-emerald-700' : 'text-slate-400'}`}>
+                            {opt.label}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
               <button 
                 onClick={next}
                 disabled={!data.name}
-                className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-100 mt-10 flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-emerald-700 transition-colors"
+                className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-100 mt-10 flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-emerald-700 transition-all active:scale-95 group"
               >
-                Tiếp theo <ChevronRight size={18} />
+                Tiếp tục <ChevronRight size={18} className="transition-transform group-hover:translate-x-1" />
               </button>
             </motion.div>
           )}
@@ -2344,50 +2698,78 @@ function OnboardingScreen({ onSubmit, user }: { onSubmit: (d: Partial<UserProfil
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="geometric-card p-8"
+              className="geometric-card p-8 border border-slate-100 shadow-xl"
             >
-              <h2 className="text-2xl font-bold text-slate-900 leading-tight mb-2">Chỉ số hình thể</h2>
-              <p className="text-sm text-slate-500 mb-8">Dữ liệu này giúp chúng tôi tính toán chỉ số BMI và năng lượng cần thiết.</p>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                  <Activity size={20} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 leading-tight">Chỉ số hình thể</h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Body Metrics</p>
+                </div>
+              </div>
+              
+              <p className="text-sm text-slate-500 mb-8 leading-relaxed font-medium">Dữ liệu này giúp AI tính toán năng lượng và chế độ ăn tối ưu.</p>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Chiều cao (cm)</label>
-                  <input 
-                    type="number" 
-                    value={data.height} 
-                    onChange={e => setData({...data, height: Number(e.target.value)})}
-                    className="w-full bg-slate-50 border border-slate-100 focus:border-emerald-500 focus:bg-white rounded-xl p-4 transition-all outline-none text-slate-800 font-medium"
-                  />
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      value={data.height} 
+                      onChange={e => setData({...data, height: Number(e.target.value)})}
+                      className="w-full bg-slate-50 border border-slate-100 focus:border-emerald-500 focus:bg-white rounded-xl p-4 transition-all outline-none text-slate-800 font-medium pr-10"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-300">CM</span>
+                  </div>
                 </div>
                 <div className="relative">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Cân nặng (kg)</label>
-                  <input 
-                    type="number" 
-                    value={data.weight} 
-                    onChange={e => setData({...data, weight: Number(e.target.value)})}
-                    className="w-full bg-slate-50 border-transparent border border-slate-100 focus:border-emerald-500 focus:bg-white rounded-xl p-4 transition-all outline-none text-slate-800 font-medium"
-                  />
+                  <div className="relative">
+                    <input 
+                      type="number" 
+                      value={data.weight} 
+                      onChange={e => setData({...data, weight: Number(e.target.value)})}
+                      className="w-full bg-slate-50 border-transparent border border-slate-100 focus:border-emerald-500 focus:bg-white rounded-xl p-4 transition-all outline-none text-slate-800 font-medium pr-10"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-300">KG</span>
+                  </div>
                 </div>
               </div>
 
               <div className="relative mt-8">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Mức độ vận động</label>
-                <div className="space-y-2">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 block">Mức độ vận động hàng ngày</label>
+                <div className="space-y-3">
                   {activityOptions.map(opt => (
                     <button
                       key={opt.value}
                       onClick={() => setData({...data, activityLevel: opt.value as any})}
-                      className={`w-full text-left p-4 rounded-xl border-2 transition-all ${data.activityLevel === opt.value ? 'border-emerald-600 bg-emerald-50' : 'border-slate-50 bg-slate-50'}`}
+                      className={`w-full text-left p-4 rounded-2xl border-2 transition-all flex items-center gap-4 group ${
+                        data.activityLevel === opt.value ? 'border-emerald-600 bg-emerald-50 shadow-md shadow-emerald-100' : 'border-slate-50 bg-slate-50 hover:border-slate-200'
+                      }`}
                     >
-                      <p className={`text-sm font-bold ${data.activityLevel === opt.value ? 'text-emerald-800' : 'text-slate-600'}`}>{opt.label}</p>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+                        data.activityLevel === opt.value ? 'bg-emerald-600 text-white' : 'bg-white text-slate-300'
+                      }`}>
+                         {opt.value === 'low' ? <Coffee size={20} /> : opt.value === 'moderate' ? <Activity size={20} /> : <TrendingUp size={20} />}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-sm font-black ${data.activityLevel === opt.value ? 'text-emerald-900' : 'text-slate-700'}`}>{opt.label}</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Phù hợp với nhịp sống của bạn</p>
+                      </div>
+                      {data.activityLevel === opt.value && <CheckCircle2 size={16} className="text-emerald-600" />}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-8">
-                <button onClick={prev} className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-xl hover:bg-slate-200 transition-colors">Quay lại</button>
-                <button onClick={next} className="flex-[2] bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-colors">Tiếp theo</button>
+              <div className="flex gap-4 pt-10">
+                <button onClick={prev} className="flex-1 bg-slate-100 text-slate-600 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all text-xs uppercase tracking-widest">Quay lại</button>
+                <button onClick={next} className="flex-[2] bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2 group">
+                  Tiếp theo <ChevronRight size={18} className="transition-transform group-hover:translate-x-1" />
+                </button>
               </div>
             </motion.div>
           )}
@@ -2398,10 +2780,19 @@ function OnboardingScreen({ onSubmit, user }: { onSubmit: (d: Partial<UserProfil
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="geometric-card p-8"
+              className="geometric-card p-8 border border-slate-100 shadow-xl"
             >
-              <h2 className="text-2xl font-bold text-slate-900 leading-tight mb-2">Tình trạng bệnh lý</h2>
-              <p className="text-sm text-slate-500 mb-8">Thông tin cực kỳ quan trọng để phác định chế độ ăn uống an toàn.</p>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
+                  <Shield size={20} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 leading-tight">Y tế & Sức khỏe</h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Critical Info</p>
+                </div>
+              </div>
+              
+              <p className="text-sm text-slate-500 mb-8 leading-relaxed font-medium">Đây là thông tin quan trọng nhất để NutriCare đảm bảo an toàn thực phẩm cho bạn.</p>
 
               <div className="space-y-8">
                 <div className="relative">
@@ -2421,9 +2812,62 @@ function OnboardingScreen({ onSubmit, user }: { onSubmit: (d: Partial<UserProfil
                   />
                 </div>
               </div>
-              <div className="flex gap-4 pt-8">
-                <button onClick={prev} className="flex-1 bg-slate-100 text-slate-600 font-bold py-4 rounded-xl hover:bg-slate-200 transition-colors">Quay lại</button>
-                <button onClick={() => onSubmit(data)} className="flex-[2] bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-colors">Hoàn tất</button>
+              <div className="flex gap-4 pt-10">
+                <button onClick={prev} className="flex-1 bg-slate-100 text-slate-600 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all text-xs uppercase tracking-widest">Quay lại</button>
+                <button onClick={next} className="flex-[2] bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2 group">
+                   Tiếp tục <ChevronRight size={18} className="transition-transform group-hover:translate-x-1" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {step === 4 && (
+            <motion.div 
+              key="step4"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="geometric-card p-8 border border-slate-100 shadow-xl"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-pink-50 text-pink-600 rounded-xl flex items-center justify-center">
+                  <Heart size={20} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 leading-tight">Sở thích ăn uống</h2>
+                  <p className="text-xs text-slate-400 font-bold uppercase tracking-widest leading-relaxed">Preferences</p>
+                </div>
+              </div>
+              
+              <p className="text-sm text-slate-500 mb-8 leading-relaxed font-medium">NutriCare sẽ ưu tiên các nguyên liệu bạn thích và tập trung vào sự ĐA DẠNG món ăn.</p>
+
+              <div className="space-y-6">
+                <div className="relative">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block text-emerald-600">Nguyên liệu yêu thích</label>
+                  <input 
+                    type="text" 
+                    placeholder="VD: Cá hồi, cải bó xôi, quả bơ (phân cách bằng dấu phẩy)"
+                    className="w-full bg-slate-50 border border-slate-100 focus:border-emerald-500 focus:bg-white rounded-xl p-4 transition-all outline-none text-slate-800 font-medium"
+                    onChange={e => setData({...data, likedIngredients: e.target.value.split(',').map(s => s.trim()).filter(s => s)})}
+                  />
+                </div>
+                
+                <div className="relative">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block text-rose-400">Nguyên liệu không thích</label>
+                  <input 
+                    type="text" 
+                    placeholder="VD: Mướp đắng, rau răm (phân cách bằng dấu phẩy)"
+                    className="w-full bg-slate-50 border border-slate-100 focus:border-rose-300 focus:bg-white rounded-xl p-4 transition-all outline-none text-slate-800 font-medium"
+                    onChange={e => setData({...data, dislikedIngredients: e.target.value.split(',').map(s => s.trim()).filter(s => s)})}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-4 pt-10">
+                <button onClick={prev} className="flex-1 bg-slate-100 text-slate-600 font-black py-4 rounded-2xl hover:bg-slate-200 transition-all text-xs uppercase tracking-widest">Quay lại</button>
+                <button onClick={() => onSubmit(data)} className="flex-[2] bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95 flex items-center justify-center gap-2 group">
+                   Hoàn tất hồ sơ <ShieldCheck size={18} className="transition-transform group-hover:scale-110" />
+                </button>
               </div>
             </motion.div>
           )}
@@ -2751,15 +3195,9 @@ function AdminView({ onBack }: { onBack: () => void }) {
               </div>
             ) : diseases.map(d => (
               <div key={d.id} className={`rounded-3xl border shadow-sm overflow-hidden flex flex-col transition-all ${isAdminDarkMode ? 'bg-slate-900 border-slate-800 hover:border-emerald-500/50' : 'bg-white border-slate-100 hover:border-emerald-200'}`}>
-                <div className="h-40 relative">
-                  {d.imageUrl ? (
-                    <img src={d.imageUrl} alt={d.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                  ) : (
-                    <div className={`w-full h-full flex items-center justify-center ${isAdminDarkMode ? 'bg-slate-800 text-slate-700' : 'bg-slate-100 text-slate-300'}`}>
-                      <Activity size={48} />
-                    </div>
-                  )}
-                  <div className={`absolute top-4 left-4 backdrop-blur px-3 py-1 rounded-full shadow-sm ${isAdminDarkMode ? 'bg-slate-900/90 text-white' : 'bg-white/90'}`}>
+                <div className="h-20 relative bg-emerald-950 flex items-center justify-center">
+                  <Activity size={32} className="text-emerald-500/50" />
+                  <div className={`absolute top-4 left-4 backdrop-blur px-3 py-1 rounded-full shadow-sm bg-black/40 text-white`}>
                     <span className="text-[10px] font-black uppercase tracking-tighter">{d.id}</span>
                   </div>
                 </div>
