@@ -1087,6 +1087,205 @@ const AIChatbot = ({ profile }: { profile: UserProfile | null }) => {
   );
 };
 
+const translations = {
+  vi: {
+    navBrand: "NutriCare",
+    loginBtn: "Đăng nhập ngay",
+    heroBadge: "Trí tuệ nhân tạo (AI) Chuẩn Y Khoa",
+    heroTitleLine1: "Dinh dưỡng đúng",
+    heroTitleLine2: "Sống khỏe mỗi ngày.",
+    heroDesc: "NutriCare sử dụng AI thế hệ mới để cá nhân hóa thực đơn hàng ngày chuẩn y khoa dựa trên bệnh lý, chỉ số cơ thể và thói quen của riêng bạn.",
+    freeTrial: "Trải nghiệm miễn phí",
+    trustedUsers: "5000+ người tin dùng",
+    
+    lunchCardTitle: "Thực đơn cá nhân",
+    lunchCardSub: "Bữa trưa Thứ Hai",
+    matchPercent: "Khớp 98%",
+    salmonDish: "Cá hồi sốt cam & Măng tây",
+    richProtein: "Giàu Đạm",
+    aiNoteTitle: "AI Ghi chú:",
+    aiNoteDesc: '"Món ăn này được thiết kế riêng để kiểm soát đạm cho bệnh lý Gout và duy trì đường huyết ổn định."',
+    
+    statUsers: "Người sử dụng",
+    statData: "Dữ liệu bệnh lý",
+    statDishes: "Món ăn chuẩn vị",
+    statImprove: "Cải thiện sức khỏe",
+    
+    howItWorksTitle: "Sức khỏe của bạn,",
+    howItWorksSub: "Quy trình của chúng tôi",
+    step1Title: "Nhập dữ liệu sức khỏe",
+    step1Desc: "Chỉ mất 2 phút để cập nhật các chỉ số BMI, bệnh lý và thói quen vận động của bạn.",
+    step1D1: "Phân tích BMI và thành phần cơ thể chuyên sâu",
+    step1D2: "Số hóa bệnh án và lịch sử dị ứng thực phẩm",
+    step1D3: "Xác định ngưỡng calo tiêu thụ tối ưu (BMR/TDEE)",
+    
+    step2Title: "Phân tích bởi AI",
+    step2Desc: "Hệ thống AI xử lý hàng nghìn quy tắc dinh dưỡng để tạo ra chiến lược ăn uống an toàn nhất.",
+    step2D1: "Đối soát 15,000+ thành phần dinh dưỡng chuẩn y khoa",
+    step2D2: "Tự động loại bỏ các tác nhân gây kích ứng bệnh lý",
+    step2D3: "Ưu tiên các nhóm thực phẩm hỗ trợ điều trị tự nhiên",
+    
+    step3Title: "Thực thi & Theo dõi",
+    step3Desc: "Nhận thực đơn mỗi ngày, báo cáo tiến độ và điều chỉnh linh hoạt theo trạng thái cơ thể.",
+    step3D1: "Nhắc nhở thông minh: Uống nước, dùng thuốc, vận động",
+    step3D2: "Biểu đồ tuân thủ và tiến triển sức khỏe hàng tuần",
+    step3D3: "Hỗ trợ thay đổi món ăn linh hoạt theo sở thích cá nhân",
+    
+    solutionsTitle: "Giải pháp Dinh dưỡng Toàn diện",
+    solutionsDesc: "Kết hợp khoa học dữ liệu và y tế để mang lại hiệu quả thật sự.",
+    feat1Title: "Dựa trên Bệnh lý",
+    feat1Desc: "Phác đồ ăn uống được tối ưu cho Dạ dày, Đại tràng, Tiểu đường và hơn 20 nhóm bệnh lý.",
+    feat2Title: "Cá nhân hóa AI",
+    feat2Desc: "Sử dụng Gemini AI để phân tích dữ liệu dinh dưỡng, đưa ra gợi ý khớp nhất với BMI và sở thích.",
+    feat3Title: "Theo dõi & Nhắc nhở",
+    feat3Desc: "Nhắc giờ ăn, uống nước và đo lường mức độ tuân thủ hàng ngày để đảm bảo hiệu quả.",
+    
+    newsTitle: "Kiến thức & Tin tức",
+    newsDesc: "Cập nhật những nghiên cứu mới nhất và lời khuyên chuyên gia về sức khỏe chủ động.",
+    viewAllNews: "Xem tất cả bài viết",
+    news1Title: "Chế độ ăn DASH cho người cao huyết áp",
+    news1Cat: "Y khoa",
+    news1Read: "5 phút đọc",
+    news2Title: "Lợi ích của thực phẩm lên men đối với đại tràng",
+    news2Cat: "Dinh dưỡng",
+    news2Read: "4 phút đọc",
+    news3Title: "Top 5 loại hạt tốt nhất cho bệnh nhân tiểu đường",
+    news3Cat: "Mẹo hay",
+    news3Read: "6 phút đọc",
+    
+    diseaseTitle: "Hỗ trợ đa dạng",
+    diseaseTitleSub: "bệnh lý mãn tính",
+    diseaseDesc: "Chúng tôi nghiên cứu và xây dựng dữ liệu chuyên sâu cho từng nhóm đối tượng, giúp bạn không còn băn khoăn \"Hôm nay nên ăn gì?\"",
+    diseases: ["Dạ dày", "Đại tràng", "Tiểu đường", "Huyết áp cao", "Gout", "Gan nhiễm mỡ", "Sỏi thận", "Tim mạch"],
+    
+    cardHeartTitle: "Tránh kích ứng",
+    cardHeartDesc: "Loại bỏ thực phẩm gây viêm loét cho bệnh nhân dạ dày.",
+    cardGlucoseTitle: "Đường huyết",
+    cardGlucoseDesc: "Kiểm soát tinh bột và đường cho người tiểu đường.",
+    cardKidneyTitle: "Thanh lọc thận",
+    cardKidneyDesc: "Cân bằng đạm và khoáng chất phù hợp cho người bệnh thận.",
+    cardLifeTitle: "Sức sống xanh",
+    cardLifeDesc: "Tăng cường vitamin phục hồi sức khỏe tổng thể.",
+    
+    faqTitle: "Câu hỏi thường gặp",
+    faqDesc: "Giải đáp các thắc mắc về trợ lý NutriCare AI.",
+    faqs: [
+      { q: "NutriCare có thay thế được bác sĩ không?", a: "Ứng dụng đóng vai trò là trợ lý dinh dưỡng hỗ trợ, không thể thay thế cho chẩn đoán hay điều trị y tế chuyên nghiệp. Chúng tôi khuyên bạn nên tham khảo ý kiến bác sĩ trước khi áp dụng." },
+      { q: "Dữ liệu thực đơn dựa trên cơ sở nào?", a: "AI của chúng tôi được huấn luyện dựa trên phác đồ dinh dưỡng chuẩn y khoa Việt Nam và quốc tế cho từng nhóm bệnh lý cụ thể." },
+      { q: "Tôi có thể sử dụng miễn phí không?", a: "Có, gói Miễn phí cung cấp các tính năng cơ bản giúp bạn làm quen. Để tối ưu hóa trải nghiệm, bạn có thể cân nhắc các gói trả phí." },
+      { q: "Làm thế nào để đổi món ăn nếu tôi không thích?", a: "Bạn có thể sử dụng tính năng 'Yêu cầu AI đổi món' (với gói Extra trở lên) hoặc tự chỉnh sửa món ăn theo ý thích trong trang thực đơn cá nhân." }
+    ],
+    
+    callToActionBadge: "Bắt đầu hành trình của bạn",
+    callToActionTitleLine1: "Sẵn sàng để bắt đầu",
+    callToActionTitleLine2: "kỷ nguyên dinh dưỡng mới?",
+    callToActionDesc: "Chỉ mất 2 phút để thiết lập hồ sơ và nhận thực đơn đầu tiên từ chuyên gia AI của bạn.",
+    signUpFree: "Đăng ký miễn phí",
+    secureBadgeTitle: "An toàn & Bảo mật",
+    secureBadgeDesc: "Dữ liệu của bạn được mã hóa hoàn toàn.",
+    footerNote: "* NutriCare là trợ lý hỗ trợ dinh dưỡng dựa trên dữ liệu khoa học. Nội dung ứng dụng không thay thế lời khuyên hay chẩn đoán y tế chính thức từ bác sĩ chuyên khoa.",
+    solutionDetail: "Chi tiết giải pháp"
+  },
+  en: {
+    navBrand: "NutriCare",
+    loginBtn: "Sign In Now",
+    heroBadge: "Medical-Grade Artificial Intelligence (AI)",
+    heroTitleLine1: "Right Nutrition",
+    heroTitleLine2: "Healthy Everyday Life.",
+    heroDesc: "NutriCare uses next-generation AI to personalize medical-grade daily menus based on your conditions, body metrics, and lifestyle.",
+    freeTrial: "Start Free Trial",
+    trustedUsers: "5000+ trusted users",
+    
+    lunchCardTitle: "Personalized Plan",
+    lunchCardSub: "Monday Lunch",
+    matchPercent: "98% Match",
+    salmonDish: "Orange Salmon & Asparagus",
+    richProtein: "High Protein",
+    aiNoteTitle: "AI Note:",
+    aiNoteDesc: '"This meal is customized to control protein for Gout and maintain stable blood sugar levels."',
+    
+    statUsers: "Active Users",
+    statData: "Medical Profiles",
+    statDishes: "Premium Recipes",
+    statImprove: "Health Improvement",
+    
+    howItWorksTitle: "Your Health,",
+    howItWorksSub: "Our Systematic Process",
+    step1Title: "Enter Health Data",
+    step1Desc: "It takes only 2 minutes to update your BMI, medical conditions, and lifestyle habits.",
+    step1D1: "In-depth BMI and body composition analysis",
+    step1D2: "Digitalized medical history and allergen logs",
+    step1D3: "Optimal calorie expenditure target (BMR/TDEE)",
+    
+    step2Title: "AI Scientific Analysis",
+    step2Desc: "Our AI system processes thousands of medical nutrition guidelines to ensure absolute safety.",
+    step2D1: "Over 15,000+ medical-grade nutritional database matches",
+    step2D2: "Automatic elimination of medical and allergen trigger foods",
+    step2D3: "Prioritized list of clean organic treatment-supportive foods",
+    
+    step3Title: "Track & Comply",
+    step3Desc: "Receive daily menus, log meal compliance, and adapt to your changing body metrics dynamically.",
+    step3D1: "Smart reminders: Water intake, medication, physical goals",
+    step3D2: "Weekly compliance dashboard and health progression charts",
+    step3D3: "Flexible alternative dish selections matching preferences",
+    
+    solutionsTitle: "Comprehensive Medical Nutrition Solution",
+    solutionsDesc: "Blending healthcare science and artificial intelligence for tangible improvements.",
+    feat1Title: "Medical Condition Specific",
+    feat1Desc: "Diet plans fully optimized for Gastritis, Colitis, Diabetes, and 20+ other chronic conditions.",
+    feat2Title: "Next-gen AI Personalization",
+    feat2Desc: "Utilizing Gemini AI model to design meal structures matching your BMI targets and tastes.",
+    feat3Title: "Interactive Trackers",
+    feat3Desc: "Timely alerts for meals and logging sheets keeping you on track to success.",
+    
+    newsTitle: "Guides & Research Insights",
+    newsDesc: "Stay updated with the latest clinical studies and expert advice on proactive wellness.",
+    viewAllNews: "View All Articles",
+    news1Title: "DASH Diet Guidelines for Hypertension Patients",
+    news1Cat: "Medical Science",
+    news1Read: "5 min read",
+    news2Title: "Crucial Benefits of Fermented Food for Gut Microbiome",
+    news2Cat: "Nutrition",
+    news2Read: "4 min read",
+    news3Title: "Top 5 Dietary Seeds Recommended for Diabetes Care",
+    news3Cat: "Healthy Tips",
+    news3Read: "6 min read",
+    
+    diseaseTitle: "Covers Diverse",
+    diseaseTitleSub: "Chronic Diseases",
+    diseaseDesc: "We continuous build in-depth specialized datasets to help you answer the classic: 'What should I eat today?' hassle-free.",
+    diseases: ["Gastritis", "Colitis", "Diabetes", "Hypertension", "Gout", "Fatty Liver", "Kidney Stones", "Cardiovascular"],
+    
+    cardHeartTitle: "Avoid Irritation",
+    cardHeartDesc: "Exclude gastric triggers for comfortable ulcer healing and care.",
+    cardGlucoseTitle: "Blood Glucose",
+    cardGlucoseDesc: "Control starch source and sugar levels for medical-grade diabetes care.",
+    cardKidneyTitle: "Kidney Cleansing",
+    cardKidneyDesc: "Excellently balance dietary minerals and proteins tailored for nephron safety.",
+    cardLifeTitle: "Vital Organic Energy",
+    cardLifeDesc: "Enhance recovery speed with micronutrient-rich wholesome vegetables.",
+    
+    faqTitle: "Frequently Asked Questions",
+    faqDesc: "General answers to clarify how NutriCare AI companion helps you.",
+    faqs: [
+      { q: "Can NutriCare replace a physical doctor's diagnosis?", a: "Absolutely not. This acts purely as a smart medical-grade nutritional planner and cannot replace physical emergency treatment or clinical doctor counseling." },
+      { q: "On what basis are these dietary plans generated?", a: "Our computational AI core parses medical nutrition directives matching both Vietnamese Ministry of Health standards and global NIH databases." },
+      { q: "Is there a free basic subscription tier?", a: "Yes! The free subscription includes standard body analysis. You can upgrade any time to premium for deeper medical AI features." },
+      { q: "Can I easily swap meals or ingredients if disliked?", a: "Of course! Simply utilize the 'Regenerate with AI' button (available on Extra plans and above) or customize details manually inside your planner page." }
+    ],
+    
+    callToActionBadge: "Begin Your Path to Health Today",
+    callToActionTitleLine1: "Ready to launch a new",
+    callToActionTitleLine2: "nutrition-backed lifestyle?",
+    callToActionDesc: "Configure your setup in just 2 minutes to obtain your personalized AI-driven recipe book.",
+    signUpFree: "Get Started Free",
+    secureBadgeTitle: "Fully Safeguarded",
+    secureBadgeDesc: "All personal medical reports are fully encrypted.",
+    footerNote: "* NutriCare is an AI assistant providing healthy diet suggestions. Content does not replace formal face-to-face physician consultation or diagnostic tests.",
+    solutionDetail: "Solution Details"
+  }
+};
+
 interface LandingStepCardProps {
   item: {
     step: string;
@@ -1095,9 +1294,10 @@ interface LandingStepCardProps {
     img: string;
     details: string[];
   };
+  lang?: 'vi' | 'en';
 }
 
-const LandingStepCard: React.FC<LandingStepCardProps> = ({ item }) => {
+const LandingStepCard: React.FC<LandingStepCardProps> = ({ item, lang = 'vi' }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
   return (
@@ -1134,7 +1334,9 @@ const LandingStepCard: React.FC<LandingStepCardProps> = ({ item }) => {
                 className="overflow-hidden"
               >
                 <div className="pt-4 border-t border-white/10 space-y-3">
-                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Chi tiết giải pháp</p>
+                  <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">
+                    {lang === 'en' ? 'Solution Details' : 'Chi tiết giải pháp'}
+                  </p>
                   <ul className="space-y-2">
                     {item.details.map((detail: string, idx: number) => (
                       <motion.li 
@@ -1159,8 +1361,112 @@ const LandingStepCard: React.FC<LandingStepCardProps> = ({ item }) => {
   );
 };
 
+const getRealTimeMealData = (lang: 'vi' | 'en') => {
+  const now = new Date();
+  const hours = now.getHours();
+  const day = now.getDay(); // 0: Sunday, 1: Monday, etc.
+
+  const daysVi = ["Chủ Nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
+  const daysEn = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const currentDayStr = lang === 'en' ? daysEn[day] : daysVi[day];
+
+  let mealTypeVi = "";
+  let mealTypeEn = "";
+  let dishNameVi = "";
+  let dishNameEn = "";
+  let image = "";
+  let noteVi = "";
+  let noteEn = "";
+  let kcal = 0;
+  let typeTagVi = "";
+  let typeTagEn = "";
+  let macros = [
+    { l: "Carbs", v: "0g", c: "blue" },
+    { l: "Protein", v: "0g", c: "rose" },
+    { l: "Fat", v: "0g", c: "amber" }
+  ];
+
+  if (hours >= 5 && hours < 11) {
+    mealTypeVi = "Bữa sáng";
+    mealTypeEn = "Breakfast";
+    dishNameVi = "Phở bò phi lê tái lăn & Rau thơm";
+    dishNameEn = "Sautéed Beef Pho & Fresh Herbs";
+    image = "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&q=80&w=300";
+    noteVi = '"Ít muối, tăng cường thảo mộc tự nhiên hỗ trợ điều hòa huyết áp và hỗ trợ tiêu hóa vào sáng sớm."';
+    noteEn = '"Low in sodium, fortified with digest-supportive natural herbs to gently stabilize early morning BP."';
+    kcal = 280;
+    typeTagVi = "Thanh Đạm";
+    typeTagEn = "Balanced";
+    macros = [
+      { l: "Carbs", v: "55g", c: "blue" },
+      { l: "Protein", v: "22g", c: "rose" },
+      { l: "Fat", v: "8g", c: "amber" }
+    ];
+  } else if (hours >= 11 && hours < 16) {
+    mealTypeVi = "Bữa trưa";
+    mealTypeEn = "Lunch";
+    dishNameVi = "Cá hồi sốt cam & Măng tây";
+    dishNameEn = "Orange Salmon & Asparagus";
+    image = "https://images.unsplash.com/photo-1559757175-0eb30cd8c063?auto=format&fit=crop&q=80&w=300";
+    noteVi = '"Món ăn này được thiết kế riêng để kiểm soát đạm cho bệnh lý Gout và duy trì đường huyết ổn định."';
+    noteEn = '"This meal is customized to control protein for Gout and maintain stable blood sugar levels."';
+    kcal = 350;
+    typeTagVi = "Giàu Đạm";
+    typeTagEn = "High Protein";
+    macros = [
+      { l: "Carbs", v: "35g", c: "blue" },
+      { l: "Protein", v: "40g", c: "rose" },
+      { l: "Fat", v: "14g", c: "amber" }
+    ];
+  } else {
+    mealTypeVi = "Bữa tối";
+    mealTypeEn = "Dinner";
+    dishNameVi = "Ức gà áp chảo sốt bơ tỏi & Súp lơ";
+    dishNameEn = "Garlic Butter Chicken Breast & Broccoli";
+    image = "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&q=80&w=300";
+    noteVi = '"Ít tinh bột, giàu xơ và magie chất lượng cao giúp cải thiện chất lượng giấc ngủ tối đa."';
+    noteEn = '"Low carbs, rich in natural fiber and active magnesium to promote deep restorative sleep."';
+    kcal = 310;
+    typeTagVi = "Giàu Xơ";
+    typeTagEn = "High Fiber";
+    macros = [
+      { l: "Carbs", v: "12g", c: "blue" },
+      { l: "Protein", v: "38g", c: "rose" },
+      { l: "Fat", v: "9g", c: "amber" }
+    ];
+  }
+
+  return {
+    title: lang === 'en' ? "Personalized Plan" : "Thực đơn cá nhân",
+    sub: lang === 'en' ? `${currentDayStr} ${mealTypeEn}` : `${mealTypeVi} ${currentDayStr}`,
+    dishName: lang === 'en' ? dishNameEn : dishNameVi,
+    image,
+    note: lang === 'en' ? noteEn : noteVi,
+    kcal,
+    typeTag: lang === 'en' ? typeTagEn : typeTagVi,
+    macros
+  };
+};
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [lang, setLang] = useState<'vi' | 'en'>(() => {
+    try {
+      return (localStorage.getItem('nutricare_lang') as 'vi' | 'en') || 'vi';
+    } catch {
+      return 'vi';
+    }
+  });
+
+  const handleSetLang = (newLang: 'vi' | 'en') => {
+    setLang(newLang);
+    try {
+      localStorage.setItem('nutricare_lang', newLang);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [mealPlan, setMealPlan] = useState<MealPlan | null>(null);
@@ -1168,68 +1474,78 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [view, setView] = useState<'dashboard' | 'profile' | 'onboarding' | 'pricing' | 'admin'>('dashboard');
   const [editingMeal, setEditingMeal] = useState<{ type: string, content: string } | null>(null);
+  const [activeFeedbackMeal, setActiveFeedbackMeal] = useState<string | null>(null);
+  const [feedbackText, setFeedbackText] = useState<string>('');
   const [selectedMealDetail, setSelectedMealDetail] = useState<{ label: string, type: string, content: string, nutrition?: NutritionInfo, ingredients?: string[] } | null>(null);
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [healthTips, setHealthTips] = useState<HealthTip[]>([]);
   const [loadingTips, setLoadingTips] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
       setUser(authUser);
-      if (authUser) {
-        await fetchProfile(authUser.uid, authUser);
-      } else {
+      if (!authUser) {
+        setProfile(null);
         setLoading(false);
       }
     });
     return () => unsubscribe();
   }, []);
 
-  const fetchProfile = async (uid: string, authUser: User) => {
-    try {
-      const docRef = doc(db, 'users', uid);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        const data = docSnap.data() as UserProfile;
+  useEffect(() => {
+    if (!user) return;
+
+    setLoading(true);
+    const docRef = doc(db, 'users', user.uid);
+    const unsubscribeProfile = onSnapshot(docRef, async (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as UserProfile;
         
         // Auto-sync admin role for bootstrap user
-        if (authUser.email === 'quocvinh.tran87@gmail.com' && data.role !== 'admin') {
+        if (user.email === 'quocvinh.tran87@gmail.com' && data.role !== 'admin') {
           const updated = { ...data, role: 'admin' as const };
-          await setDoc(doc(db, 'users', uid), updated, { merge: true });
+          await setDoc(docRef, updated, { merge: true });
           setProfile(updated);
         } else {
           setProfile(data);
         }
 
-        setView('dashboard');
+        if (view === 'onboarding') {
+          setView('dashboard');
+        }
       } else {
         setView('onboarding');
       }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.GET, `users/${uid}`);
-    } finally {
       setLoading(false);
-    }
-  };
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `users/${user.uid}`);
+      setLoading(false);
+    });
 
-  const fetchMealPlanForDate = async (uid: string, date: string) => {
-    setMealPlan(null);
-    try {
-      const q = query(collection(db, 'mealPlans'), where('userId', '==', uid), where('date', '==', date));
-      const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
-        setMealPlan(querySnapshot.docs[0].data() as MealPlan);
-      }
-    } catch (err) {
-      handleFirestoreError(err, OperationType.LIST, 'mealPlans');
-    }
-  };
+    return () => unsubscribeProfile();
+  }, [user]);
 
   useEffect(() => {
     if (user && selectedDate && view === 'dashboard') {
-      fetchMealPlanForDate(user.uid, selectedDate);
+      setMealPlan(null);
+      const q = query(
+        collection(db, 'mealPlans'),
+        where('userId', '==', user.uid),
+        where('date', '==', selectedDate)
+      );
+      const unsubscribeMeal = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          setMealPlan(snapshot.docs[0].data() as MealPlan);
+        } else {
+          setMealPlan(null);
+        }
+      }, (err) => {
+        handleFirestoreError(err, OperationType.LIST, 'mealPlans');
+      });
+
+      return () => unsubscribeMeal();
     }
-  }, [selectedDate, user, view]);
+  }, [user, selectedDate, view]);
 
   const generateHealthTips = async (p: UserProfile) => {
     setLoadingTips(true);
@@ -1571,6 +1887,64 @@ export default function App() {
     }
   };
 
+  const handleRatingClick = async (mealType: string, rating: number) => {
+    if (!mealPlan || !user) return;
+    
+    const docId = `${user.uid}_${selectedDate}`;
+    const ratings = mealPlan.ratings || {};
+    const existingFeedback = ratings[mealType]?.feedback || '';
+    const updatedRatings = {
+      ...ratings,
+      [mealType]: {
+        rating,
+        feedback: existingFeedback,
+        createdAt: ratings[mealType]?.createdAt || new Date().toISOString()
+      }
+    };
+    const updatedMealPlan = {
+      ...mealPlan,
+      ratings: updatedRatings
+    };
+
+    try {
+      await setDoc(doc(db, 'mealPlans', docId), updatedMealPlan);
+      setMealPlan(updatedMealPlan);
+      setActiveFeedbackMeal(mealType);
+      setFeedbackText(existingFeedback);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `mealPlans/${docId}`);
+    }
+  };
+
+  const handleSaveFeedback = async (mealType: string) => {
+    if (!mealPlan || !user) return;
+    
+    const docId = `${user.uid}_${selectedDate}`;
+    const ratings = mealPlan.ratings || {};
+    const currentRatingVal = ratings[mealType]?.rating || 5;
+    const updatedRatings = {
+      ...ratings,
+      [mealType]: {
+        rating: currentRatingVal,
+        feedback: feedbackText,
+        createdAt: ratings[mealType]?.createdAt || new Date().toISOString()
+      }
+    };
+    const updatedMealPlan = {
+      ...mealPlan,
+      ratings: updatedRatings
+    };
+
+    try {
+      await setDoc(doc(db, 'mealPlans', docId), updatedMealPlan);
+      setMealPlan(updatedMealPlan);
+      setActiveFeedbackMeal(null);
+      setFeedbackText('');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `mealPlans/${docId}`);
+    }
+  };
+
   const handleUpgrade = async (tier: 'extra' | 'plus' | 'unlimited') => {
     if (!profile || !user) return;
     setIsUpgrading(true);
@@ -1609,21 +1983,45 @@ export default function App() {
   if (loading) return <LoadingScreen />;
 
   if (!user) {
+    const activeText = translations[lang] || translations.vi;
+    const realTimeMeal = getRealTimeMealData(lang);
     return (
       <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
         {/* Navigation */}
-        <nav className="max-w-[1024px] mx-auto px-6 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <nav className="max-w-[1024px] mx-auto px-6 py-6 flex flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2 mr-auto">
             <div className="bg-emerald-600 p-2 rounded-xl text-white">
               <Leaf size={24} />
             </div>
-            <span className="font-black text-2xl tracking-tight text-slate-900">NutriCare</span>
+            <span className="font-black text-2xl tracking-tight text-slate-900">{activeText.navBrand}</span>
           </div>
+
+          {/* Language Switcher */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-xl gap-1 shrink-0" id="language-switcher">
+            <span
+              onClick={() => handleSetLang('vi')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                lang === 'vi' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              VI
+            </span>
+            <span
+              onClick={() => handleSetLang('en')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                lang === 'en' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+              }`}
+            >
+              EN
+            </span>
+          </div>
+
           <button
+            id="login-button-nav"
             onClick={handleLogin}
-            className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95"
+            className="px-6 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm shadow-lg shadow-emerald-100 hover:bg-emerald-700 transition-all active:scale-95 shrink-0"
           >
-            Đăng nhập ngay
+            {activeText.loginBtn}
           </button>
         </nav>
 
@@ -1636,21 +2034,21 @@ export default function App() {
             className="flex-1 space-y-8 text-center md:text-left"
           >
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-black uppercase tracking-widest">
-              <Zap size={14} fill="currentColor" /> Trí tuệ nhân tạo (AI) Chuẩn Y Khoa
+              <Zap size={14} fill="currentColor" /> {activeText.heroBadge}
             </div>
             <h1 className="text-5xl md:text-7xl font-black text-slate-900 leading-[1.05] tracking-tight">
-              Dinh dưỡng đúng <br />
-              <span className="text-emerald-600">Sống khỏe mỗi ngày.</span>
+              {activeText.heroTitleLine1} <br />
+              <span className="text-emerald-600">{activeText.heroTitleLine2}</span>
             </h1>
             <p className="text-xl text-slate-500 font-medium leading-relaxed max-w-xl mx-auto md:mx-0">
-              NutriCare sử dụng AI thế hệ mới để cá nhân hóa thực đơn hàng ngày chuẩn y khoa dựa trên bệnh lý, chỉ số cơ thể và thói quen của riêng bạn.
+              {activeText.heroDesc}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
               <button 
                 onClick={handleLogin}
                 className="px-8 py-5 bg-emerald-600 text-white rounded-2xl font-black text-lg hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200 active:scale-95 flex items-center justify-center gap-2"
               >
-                Trải nghiệm miễn phí <ChevronRight size={22} />
+                {activeText.freeTrial} <ChevronRight size={22} />
               </button>
               <div className="flex -space-x-3 items-center justify-center">
                 {[1, 2, 3, 4].map(i => (
@@ -1662,7 +2060,7 @@ export default function App() {
                   <div className="flex gap-0.5 text-amber-500">
                     {[1, 2, 3, 4, 5].map(i => <Star key={i} size={12} fill="currentColor" />)}
                   </div>
-                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">5000+ người tin dùng</span>
+                  <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">{activeText.trustedUsers}</span>
                 </div>
               </div>
             </div>
@@ -1682,37 +2080,45 @@ export default function App() {
                       AI
                     </div>
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Thực đơn cá nhân</p>
-                      <p className="text-lg font-black text-slate-900">Bữa trưa Thứ Hai</p>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <span className="relative flex h-1.5 w-1.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                        </span>
+                        {realTimeMeal.title}
+                      </p>
+                      <p className="text-lg font-black text-slate-900">{realTimeMeal.sub}</p>
                     </div>
                   </div>
-                  <div className="px-3 py-1 bg-white border border-emerald-100 text-emerald-600 rounded-full text-[10px] font-bold">
-                    Khớp 98%
+                  <div className="flex flex-col items-end shrink-0">
+                    <div className="px-3 py-1 bg-white border border-emerald-100 text-emerald-600 rounded-full text-[10px] font-bold">
+                      {activeText.matchPercent}
+                    </div>
+                    <span className="text-[8px] font-mono font-bold text-slate-400 mt-1 uppercase tracking-widest flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      {lang === 'en' ? 'Live Updated' : 'Chuẩn thời gian thực'}
+                    </span>
                   </div>
                 </div>
                 
                 <div className="space-y-4">
                   <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
                     <div className="w-16 h-16 bg-slate-50 rounded-xl overflow-hidden shrink-0">
-                      <img src="https://images.unsplash.com/photo-1559757175-0eb30cd8c063?auto=format&fit=crop&q=80&w=200" className="w-full h-full object-cover" alt="Food" />
+                      <img src={realTimeMeal.image} className="w-full h-full object-cover" alt="Food" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-black text-slate-900">Cá hồi sốt cam & Măng tây</p>
+                      <p className="text-sm font-black text-slate-900">{realTimeMeal.dishName}</p>
                       <div className="flex gap-2 mt-1">
-                        <span className="text-[9px] font-bold text-slate-400 uppercase">350 Kcal</span>
-                        <span className="text-[9px] font-bold text-emerald-500 uppercase">Giàu Đạm</span>
+                        <span className="text-[9px] font-bold text-slate-400 uppercase">{realTimeMeal.kcal} Kcal</span>
+                        <span className="text-[9px] font-bold text-emerald-500 uppercase">{realTimeMeal.typeTag}</span>
                       </div>
                     </div>
                     <CheckCircle2 className="text-emerald-500" size={20} />
                   </div>
                   
                   <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { l: "Carbs", v: "45g", c: "blue" },
-                      { l: "Protein", v: "32g", c: "rose" },
-                      { l: "Fat", v: "12g", c: "amber" }
-                    ].map(stat => (
-                      <div key={stat.l} className={`p-3 bg-${stat.c}-50 rounded-xl border border-${stat.c}-100`}>
+                    {realTimeMeal.macros.map((stat, idx) => (
+                      <div key={idx} className={`p-3 bg-${stat.c}-50 rounded-xl border border-${stat.c}-100`}>
                         <p className={`text-[8px] font-black text-${stat.c}-600 uppercase mb-1`}>{stat.l}</p>
                         <p className="text-sm font-black text-slate-800">{stat.v}</p>
                       </div>
@@ -1723,10 +2129,10 @@ export default function App() {
                 <div className="mt-8 pt-6 border-t border-slate-200">
                   <div className="flex gap-2 mb-3">
                     <AlertCircle size={14} className="text-amber-500" />
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">AI Ghi chú:</p>
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{activeText.aiNoteTitle}</p>
                   </div>
                   <p className="text-[11px] text-slate-600 leading-relaxed italic">
-                    "Món ăn này được thiết kế riêng để kiểm soát đạm cho bệnh lý Gout và duy trì đường huyết ổn định."
+                    {realTimeMeal.note}
                   </p>
                 </div>
               </div>
@@ -1737,10 +2143,10 @@ export default function App() {
         {/* Stats Section */}
         <section className="max-w-[1280px] mx-auto px-6 mb-24 grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
           {[
-            { label: "Người sử dụng", value: "5,000+", icon: Users, color: "emerald" },
-            { label: "Dữ liệu bệnh lý", value: "20+", icon: ShieldCheck, color: "blue" },
-            { label: "Món ăn chuẩn vị", value: "15,000+", icon: Utensils, color: "rose" },
-            { label: "Cải thiện sức khỏe", value: "98%", icon: Activity, color: "amber" }
+            { label: activeText.statUsers, value: "5,000+", icon: Users, color: "emerald" },
+            { label: activeText.statData, value: "20+", icon: ShieldCheck, color: "blue" },
+            { label: activeText.statDishes, value: "15,000+", icon: Utensils, color: "rose" },
+            { label: activeText.statImprove, value: "98%", icon: Activity, color: "amber" }
           ].map((stat, i) => (
             <motion.div 
               key={i}
@@ -1766,7 +2172,7 @@ export default function App() {
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-600/10 blur-[150px] rounded-full translate-x-1/2 -translate-y-1/2" />
           <div className="max-w-[1024px] mx-auto relative z-10">
             <div className="text-center mb-16 space-y-4">
-              <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight">Sức khỏe của bạn, <br/> Quy trình của chúng tôi</h2>
+              <h2 className="text-3xl md:text-5xl font-black text-white tracking-tight" dangerouslySetInnerHTML={{ __html: `${activeText.howItWorksTitle} <br/> ${activeText.howItWorksSub}` }} />
               <div className="h-1.5 w-24 bg-emerald-600 mx-auto rounded-full" />
             </div>
 
@@ -1774,39 +2180,39 @@ export default function App() {
               {[
                 { 
                   step: "01",
-                  title: "Nhập dữ liệu sức khỏe",
-                  desc: "Chỉ mất 2 phút để cập nhật các chỉ số BMI, bệnh lý và thói quen vận động của bạn.",
+                  title: activeText.step1Title,
+                  desc: activeText.step1Desc,
                   img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=400",
                   details: [
-                    "Phân tích BMI và thành phần cơ thể chuyên sâu",
-                    "Số hóa bệnh án và lịch sử dị ứng thực phẩm",
-                    "Xác định ngưỡng calo tiêu thụ tối ưu (BMR/TDEE)"
+                    activeText.step1D1,
+                    activeText.step1D2,
+                    activeText.step1D3
                   ]
                 },
                 { 
                   step: "02",
-                  title: "Phân tích bởi AI",
-                  desc: "Hệ thống AI xử lý hàng nghìn quy tắc dinh dưỡng để tạo ra chiến lược ăn uống an toàn nhất.",
+                  title: activeText.step2Title,
+                  desc: activeText.step2Desc,
                   img: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&q=80&w=400",
                   details: [
-                    "Đối soát 15,000+ thành phần dinh dưỡng chuẩn y khoa",
-                    "Tự động loại bỏ các tác nhân gây kích ứng bệnh lý",
-                    "Ưu tiên các nhóm thực phẩm hỗ trợ điều trị tự nhiên"
+                    activeText.step2D1,
+                    activeText.step2D2,
+                    activeText.step2D3
                   ]
                 },
                 { 
                   step: "03",
-                  title: "Thực thi & Theo dõi",
-                  desc: "Nhận thực đơn mỗi ngày, báo cáo tiến độ và điều chỉnh linh hoạt theo trạng thái cơ thể.",
+                  title: activeText.step3Title,
+                  desc: activeText.step3Desc,
                   img: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=400",
                   details: [
-                    "Nhắc nhở thông minh: Uống nước, dùng thuốc, vận động",
-                    "Biểu đồ tuân thủ và tiến triển sức khỏe hàng tuần",
-                    "Hỗ trợ thay đổi món ăn linh hoạt theo sở thích cá nhân"
+                    activeText.step3D1,
+                    activeText.step3D2,
+                    activeText.step3D3
                   ]
                 }
               ].map((item, i) => (
-                <LandingStepCard key={i} item={item} />
+                <LandingStepCard key={i} item={item} lang={lang} />
               ))}
             </div>
           </div>
@@ -1816,28 +2222,28 @@ export default function App() {
         <section className="bg-white py-24 px-6">
           <div className="max-w-[1024px] mx-auto">
             <div className="text-center mb-16 space-y-4">
-              <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">Giải pháp Dinh dưỡng Toàn diện</h2>
-              <p className="text-slate-500 font-medium">Kết hợp khoa học dữ liệu và y tế để mang lại hiệu quả thật sự.</p>
+              <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">{activeText.solutionsTitle}</h2>
+              <p className="text-slate-500 font-medium">{activeText.solutionsDesc}</p>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 { 
                   icon: Stethoscope, 
-                  title: "Dựa trên Bệnh lý", 
-                  desc: "Phác đồ ăn uống được tối ưu cho Dạ dày, Đại tràng, Tiểu đường và hơn 20 nhóm bệnh lý.",
+                  title: activeText.feat1Title, 
+                  desc: activeText.feat1Desc,
                   color: "emerald"
                 },
                 { 
                   icon: Zap, 
-                  title: "Cá nhân hóa AI", 
-                  desc: "Sử dụng Gemini AI để phân tích dữ liệu dinh dưỡng, đưa ra gợi ý khớp nhất với BMI và sở thích.",
+                  title: activeText.feat2Title, 
+                  desc: activeText.feat2Desc,
                   color: "blue"
                 },
                 { 
                   icon: Calendar, 
-                  title: "Theo dõi & Nhắc nhở", 
-                  desc: "Nhắc giờ ăn, uống nước và đo lường mức độ tuân thủ hàng ngày để đảm bảo hiệu quả.",
+                  title: activeText.feat3Title, 
+                  desc: activeText.feat3Desc,
                   color: "rose"
                 }
               ].map((feat, i) => (
@@ -1858,36 +2264,36 @@ export default function App() {
           <div className="max-w-[1280px] mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
               <div className="space-y-4">
-                <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">Kiến thức & Tin tức</h2>
-                <p className="text-lg text-slate-500 font-medium max-w-lg">Cập nhật những nghiên cứu mới nhất và lời khuyên chuyên gia về sức khỏe chủ động.</p>
+                <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">{activeText.newsTitle}</h2>
+                <p className="text-lg text-slate-500 font-medium max-w-lg">{activeText.newsDesc}</p>
               </div>
               <button className="group flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-900 rounded-xl text-sm font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all">
-                Xem tất cả bài viết <ChevronRight size={18} className="transition-transform group-hover:translate-x-1" />
+                {activeText.viewAllNews} <ChevronRight size={18} className="transition-transform group-hover:translate-x-1" />
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
               {[
                 {
-                  title: "Chế độ ăn DASH cho người cao huyết áp",
-                  category: "Y khoa",
+                  title: activeText.news1Title,
+                  category: activeText.news1Cat,
                   image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800",
                   date: "12 Th04, 2024",
-                  readTime: "5 phút đọc"
+                  readTime: activeText.news1Read
                 },
                 {
-                  title: "Lợi ích của thực phẩm lên men đối với đại tràng",
-                  category: "Dinh dưỡng",
+                  title: activeText.news2Title,
+                  category: activeText.news2Cat,
                   image: "https://images.unsplash.com/photo-1547516508-4c1f9c7c4ec3?auto=format&fit=crop&q=80&w=800",
                   date: "10 Th04, 2024",
-                  readTime: "4 phút đọc"
+                  readTime: activeText.news2Read
                 },
                 {
-                  title: "Top 5 loại hạt tốt nhất cho bệnh nhân tiểu đường",
-                  category: "Mẹo hay",
+                  title: activeText.news3Title,
+                  category: activeText.news3Cat,
                   image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=800",
                   date: "08 Th04, 2024",
-                  readTime: "6 phút đọc"
+                  readTime: activeText.news3Read
                 }
               ].map((news, i) => (
                 <motion.div 
@@ -1926,11 +2332,11 @@ export default function App() {
           <div className="flex flex-col md:flex-row items-center gap-16">
             <div className="flex-1 space-y-8">
               <div className="space-y-4">
-                <h2 className="text-4xl font-black text-slate-900 leading-tight">Hỗ trợ đa dạng <br/> bệnh lý mãn tính</h2>
-                <p className="text-lg text-slate-500 font-medium">Chúng tôi nghiên cứu và xây dựng dữ liệu chuyên sâu cho từng nhóm đối tượng, giúp bạn không còn băn khoăn "Hôm nay nên ăn gì?"</p>
+                <h2 className="text-4xl font-black text-slate-900 leading-tight" dangerouslySetInnerHTML={{ __html: `${activeText.diseaseTitle} <br/> ${activeText.diseaseTitleSub}` }} />
+                <p className="text-lg text-slate-500 font-medium">{activeText.diseaseDesc}</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {["Dạ dày", "Đại tràng", "Tiểu đường", "Huyết áp cao", "Gout", "Gan nhiễm mỡ", "Sỏi thận", "Tim mạch"].map(d => (
+                {activeText.diseases.map(d => (
                   <div key={d} className="flex items-center gap-3 p-4 bg-white border border-slate-100 rounded-2xl text-sm font-bold text-slate-700 shadow-sm hover:border-emerald-500 transition-colors">
                     <div className="w-6 h-6 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center shrink-0">
                       <CheckCircle2 size={16} />
@@ -1944,25 +2350,25 @@ export default function App() {
               <div className="space-y-6 pt-16">
                 <div className="bg-rose-50 border border-rose-100 p-8 rounded-[2.5rem] shadow-sm transform hover:-translate-y-1 transition-all">
                   <Heart className="text-rose-500 mb-6" size={40} fill="currentColor" opacity={0.2} />
-                  <p className="text-sm font-black text-rose-900 uppercase mb-3 tracking-widest">Tránh kích ứng</p>
-                  <p className="text-sm text-rose-700 leading-relaxed">Loại bỏ thực phẩm gây viêm loét cho bệnh nhân dạ dày.</p>
+                  <p className="text-sm font-black text-rose-900 uppercase mb-3 tracking-widest">{activeText.cardHeartTitle}</p>
+                  <p className="text-sm text-rose-700 leading-relaxed">{activeText.cardHeartDesc}</p>
                 </div>
                 <div className="bg-amber-50 border border-amber-100 p-8 rounded-[2.5rem] shadow-sm transform hover:-translate-y-1 transition-all">
                   <Activity className="text-amber-500 mb-6" size={40} />
-                  <p className="text-sm font-black text-amber-900 uppercase mb-3 tracking-widest">Đường huyết</p>
-                  <p className="text-sm text-amber-700 leading-relaxed">Kiểm soát tinh bột và đường cho người tiểu đường.</p>
+                  <p className="text-sm font-black text-amber-900 uppercase mb-3 tracking-widest">{activeText.cardGlucoseTitle}</p>
+                  <p className="text-sm text-amber-700 leading-relaxed">{activeText.cardGlucoseDesc}</p>
                 </div>
               </div>
               <div className="space-y-6">
                 <div className="bg-blue-50 border border-blue-100 p-8 rounded-[2.5rem] shadow-sm transform hover:-translate-y-1 transition-all">
                   <Droplets className="text-blue-500 mb-6" size={40} fill="currentColor" opacity={0.2} />
-                  <p className="text-sm font-black text-blue-900 uppercase mb-3 tracking-widest">Thanh lọc thận</p>
-                  <p className="text-sm text-blue-700 leading-relaxed">Cân bằng đạm và khoáng chất phù hợp cho người bệnh thận.</p>
+                  <p className="text-sm font-black text-blue-900 uppercase mb-3 tracking-widest">{activeText.cardKidneyTitle}</p>
+                  <p className="text-sm text-blue-700 leading-relaxed">{activeText.cardKidneyDesc}</p>
                 </div>
                 <div className="bg-emerald-50 border border-emerald-100 p-8 rounded-[2.5rem] shadow-sm transform hover:-translate-y-1 transition-all">
                   <Leaf className="text-emerald-500 mb-6" size={40} />
-                  <p className="text-sm font-black text-emerald-900 uppercase mb-3 tracking-widest">Sức sống xanh</p>
-                  <p className="text-sm text-emerald-700 leading-relaxed">Tăng cường vitamin phục hồi sức khỏe tổng thể.</p>
+                  <p className="text-sm font-black text-emerald-900 uppercase mb-3 tracking-widest">{activeText.cardLifeTitle}</p>
+                  <p className="text-sm text-emerald-700 leading-relaxed">{activeText.cardLifeDesc}</p>
                 </div>
               </div>
             </div>
@@ -1973,17 +2379,12 @@ export default function App() {
         <section className="py-24 px-6 bg-white overflow-hidden">
           <div className="max-w-[800px] mx-auto">
             <div className="text-center mb-16 space-y-4">
-              <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">Câu hỏi thường gặp</h2>
-              <p className="text-slate-500 font-medium">Giải đáp các thắc mắc về trợ lý NutriCare AI.</p>
+              <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">{activeText.faqTitle}</h2>
+              <p className="text-slate-500 font-medium">{activeText.faqDesc}</p>
             </div>
 
             <div className="space-y-4">
-              {[
-                { q: "NutriCare có thay thế được bác sĩ không?", a: "Ứng dụng đóng vai trò là trợ lý dinh dưỡng hỗ trợ, không thể thay thế cho chẩn đoán hay điều trị y tế chuyên nghiệp. Chúng tôi khuyên bạn nên tham khảo ý kiến bác sĩ trước khi áp dụng." },
-                { q: "Dữ liệu thực đơn dựa trên cơ sở nào?", a: "AI của chúng tôi được huấn luyện dựa trên phác đồ dinh dưỡng chuẩn y khoa Việt Nam và quốc tế cho từng nhóm bệnh lý cụ thể." },
-                { q: "Tôi có thể sử dụng miễn phí không?", a: "Có, gói Miễn phí cung cấp các tính năng cơ bản giúp bạn làm quen. Để tối ưu hóa trải nghiệm, bạn có thể cân nhắc các gói trả phí." },
-                { q: "Làm thế nào để đổi món ăn nếu tôi không thích?", a: "Bạn có thể sử dụng tính năng 'Yêu cầu AI đổi món' (với gói Extra trở lên) hoặc tự chỉnh sửa món ăn theo ý thích trong trang thực đơn cá nhân." }
-              ].map((faq, i) => (
+              {activeText.faqs.map((faq, i) => (
                 <div key={i} className="group bg-slate-50 rounded-3xl p-6 hover:bg-white border border-transparent hover:border-slate-100 transition-all cursor-pointer">
                   <div className="flex justify-between items-center bg-transparent">
                     <p className="text-base font-bold text-slate-900">{faq.q}</p>
@@ -1998,7 +2399,6 @@ export default function App() {
           </div>
         </section>
 
-
         {/* Call to action */}
         <section className="max-w-[1280px] mx-auto px-6 mb-24">
           <div className="bg-emerald-600 rounded-[3.5rem] p-12 md:p-24 text-center space-y-10 relative overflow-hidden shadow-2xl shadow-emerald-200">
@@ -2007,31 +2407,30 @@ export default function App() {
             
             <div className="relative z-10 space-y-8 max-w-2xl mx-auto">
               <div className="inline-flex items-center gap-2 px-4 py-1 bg-white/20 text-white rounded-full text-xs font-black uppercase tracking-[0.2em]">
-                Bắt đầu hành trình của bạn
+                {activeText.callToActionBadge}
               </div>
-              <h2 className="text-4xl md:text-6xl font-black text-white leading-tight tracking-tight">Sẵn sàng để bắt đầu <br/> kỷ nguyên dinh dưỡng mới?</h2>
-              <p className="text-emerald-50 font-medium text-lg opacity-90">Chỉ mất 2 phút để thiết lập hồ sơ và nhận thực đơn đầu tiên từ chuyên gia AI của bạn.</p>
+              <h2 className="text-4xl md:text-6xl font-black text-white leading-tight tracking-tight" dangerouslySetInnerHTML={{ __html: `${activeText.callToActionTitleLine1} <br/> ${activeText.callToActionTitleLine2}` }} />
+              <p className="text-emerald-50 font-medium text-lg opacity-90">{activeText.callToActionDesc}</p>
               <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
                 <button 
                   onClick={handleLogin}
                   className="px-12 py-5 bg-white text-emerald-600 rounded-2xl font-black text-xl hover:bg-emerald-50 transition-all shadow-xl shadow-emerald-900/10 active:scale-95"
                 >
-                  Đăng ký miễn phí
+                  {activeText.signUpFree}
                 </button>
                 <div className="bg-emerald-700/30 backdrop-blur border border-white/10 p-4 rounded-2xl flex items-center gap-4 text-left">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-white">
                     <ShieldCheck size={24} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black text-white uppercase tracking-widest">An toàn & Bảo mật</p>
-                    <p className="text-[9px] text-emerald-100 opacity-80">Dữ liệu của bạn được mã hóa hoàn toàn.</p>
+                    <p className="text-[10px] font-black text-white uppercase tracking-widest">{activeText.secureBadgeTitle}</p>
+                    <p className="text-[9px] text-emerald-100 opacity-80">{activeText.secureBadgeDesc}</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
-
 
         {/* Footer */}
         <footer className="max-w-[1024px] mx-auto px-6 py-12 border-t border-slate-200">
@@ -2043,7 +2442,7 @@ export default function App() {
               <span className="font-black text-lg tracking-tight text-slate-800">NutriCare.</span>
             </div>
             <p className="text-[10px] text-slate-400 font-medium text-center md:text-right max-w-sm italic">
-              * NutriCare là trợ lý hỗ trợ dinh dưỡng dựa trên dữ liệu khoa học. Nội dung ứng dụng không thay thế lời khuyên hay chẩn đoán y tế chính thức từ bác sĩ chuyên khoa.
+              {activeText.footerNote}
             </p>
           </div>
           <div className="mt-8 text-center text-[10px] text-slate-300 font-bold uppercase tracking-[0.2em]">
@@ -2074,7 +2473,13 @@ export default function App() {
         <div className="flex items-center gap-4">
           <div className="text-right hidden sm:block">
             <p className="text-sm font-semibold">{profile?.name}</p>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">ID: NC-{user.uid.slice(0, 4).toUpperCase()}</p>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight flex items-center gap-1.5 justify-end" title={lang === 'en' ? 'Synced in real-time' : 'Đồng bộ theo thời gian thực'}>
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+              ID: NC-{user.uid.slice(0, 4).toUpperCase()}
+            </p>
           </div>
           <button 
             onClick={() => setView(view === 'dashboard' ? 'profile' : 'dashboard')}
@@ -2303,6 +2708,82 @@ export default function App() {
                             <p className="text-[10px] text-slate-500 mb-1 line-clamp-2">{m.content.split(',').slice(1).join(', ') || 'Dễ tiêu hóa, tốt cho sức khỏe.'}</p>
                             
                             <NutritionBadge info={mealPlan.nutrition?.[m.type as keyof typeof mealPlan.nutrition]} />
+
+                            {/* Đánh giá và Phản hồi món ăn */}
+                            <div className="mt-3 pt-3 border-t border-slate-200/50">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                  {lang === 'en' ? 'Rate recipe' : 'Đánh giá món ăn'}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  {[1, 2, 3, 4, 5].map((star) => {
+                                    const currentRating = mealPlan.ratings?.[m.type]?.rating || 0;
+                                    const isFilled = star <= currentRating;
+                                    return (
+                                      <button
+                                        key={star}
+                                        type="button"
+                                        onClick={() => handleRatingClick(m.type, star)}
+                                        className="text-slate-300 hover:text-amber-400 transition-colors focus:outline-none"
+                                        title={`${star} ${lang === 'en' ? 'stars' : 'sao'}`}
+                                      >
+                                        <Star
+                                          size={14}
+                                          className={`transition-all ${isFilled ? 'text-amber-500 fill-amber-400' : 'text-slate-300 hover:scale-120'}`}
+                                        />
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                              
+                              {mealPlan.ratings?.[m.type]?.rating ? (
+                                <div className="mt-2 text-[10px]">
+                                  {activeFeedbackMeal === m.type ? (
+                                    <div className="flex gap-1 items-center">
+                                      <input 
+                                        type="text"
+                                        placeholder={lang === 'en' ? 'Optional review...' : 'Ý kiến góp ý...'}
+                                        value={feedbackText}
+                                        onChange={(e) => setFeedbackText(e.target.value)}
+                                        className="flex-1 text-[10px] px-2 py-1 bg-white border border-slate-200 rounded-md outline-none focus:border-emerald-500 font-medium text-slate-700"
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleSaveFeedback(m.type);
+                                        }}
+                                        autoFocus
+                                      />
+                                      <button
+                                        onClick={() => handleSaveFeedback(m.type)}
+                                        className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-1 rounded-md hover:bg-emerald-700 transition-colors shrink-0"
+                                      >
+                                        {lang === 'en' ? 'Save' : 'Lưu'}
+                                      </button>
+                                      <button
+                                        onClick={() => setActiveFeedbackMeal(null)}
+                                        className="text-[9px] text-slate-400 hover:text-slate-600 font-medium px-1 shrink-0"
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-between bg-white border border-slate-100 p-1.5 rounded-lg shadow-sm">
+                                      <span className="text-[10px] text-slate-500 italic truncate max-w-[70%]">
+                                        {mealPlan.ratings[m.type].feedback || (lang === 'en' ? 'Click to add review' : 'Chọn để viết góp ý')}
+                                      </span>
+                                      <button 
+                                        onClick={() => {
+                                          setActiveFeedbackMeal(m.type);
+                                          setFeedbackText(mealPlan.ratings?.[m.type]?.feedback || '');
+                                        }}
+                                        className="text-[9px] text-emerald-600 font-bold hover:underline shrink-0 ml-1"
+                                      >
+                                        {lang === 'en' ? 'Edit' : 'Góp ý'}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : null}
+                            </div>
 
                             <div className="mt-4">
                               {editingMeal?.type === m.type ? (

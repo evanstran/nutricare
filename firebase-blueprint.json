@@ -46,6 +46,7 @@
         "dinner": { "type": "string" },
         "snacks": { "type": "array" },
         "aiTips": { "type": "string" },
+        "ratings": { "type": "object", "description": "Meal feedback details" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
     },

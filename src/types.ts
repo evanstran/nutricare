@@ -66,6 +66,13 @@ export interface MealPlan {
   aiTips: string;
   shouldAvoid: string[];
   shouldEat: string[];
+  ratings?: {
+    [mealType: string]: {
+      rating: number;
+      feedback?: string;
+      createdAt?: string;
+    };
+  };
   createdAt: string;
 }
 
