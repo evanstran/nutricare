@@ -436,7 +436,7 @@ const MealDetailModal = ({ isOpen, onClose, meal }: { isOpen: boolean, onClose: 
   );
 };
 
-const HealthArticlesSection = ({ tips, loading }: { tips: HealthTip[], loading: boolean }) => {
+const HealthArticlesSection = ({ tips, loading, onViewAll }: { tips: HealthTip[], loading: boolean, onViewAll?: () => void }) => {
   const IconComponent = (iconName: string) => {
     const icons: any = { Heart, Activity, Utensils, Zap, Leaf, ShieldCheck, Apple, Wind, Moon, Sun, Stethoscope };
     const Icon = icons[iconName] || Activity;
@@ -450,6 +450,15 @@ const HealthArticlesSection = ({ tips, loading }: { tips: HealthTip[], loading: 
           <Sparkles size={16} className="text-amber-500" />
           Kiến thức dành riêng cho bạn
         </h3>
+        {onViewAll && (
+          <button 
+            onClick={onViewAll}
+            className="text-xs font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-wider flex items-center gap-1 transition-all hover:underline"
+          >
+            Xem tất cả bài viết
+            <ChevronRight size={14} />
+          </button>
+        )}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1448,6 +1457,397 @@ const getRealTimeMealData = (lang: 'vi' | 'en') => {
   };
 };
 
+const getHealthArticlesData = (lang: 'vi' | 'en') => {
+  return [
+    {
+      id: "art-1",
+      title: lang === 'en' ? "DASH Diet Guidelines for Hypertension Patients" : "Chế độ ăn DASH cho người cao huyết áp",
+      category: lang === 'en' ? "Medical Science" : "Y khoa",
+      readTime: lang === 'en' ? "5 min read" : "5 phút đọc",
+      date: lang === 'en' ? "Apr 12, 2026" : "12 Th04, 2026",
+      image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800",
+      summary: lang === 'en' 
+        ? "Review dietary pathways shown to safely reduce arterial pressure and enhance heart longevity."
+        : "Khám phá phác đồ ăn uống giúp giảm áp lực động mạch tự nhiên và kéo dài tuổi thọ tim mạch.",
+      content: lang === 'en' ? [
+        "The Dietary Approaches to Stop Hypertension (DASH) is a highly recommended nutrition standard for reducing systemic arterial pressure without sole reliance on pharmaceuticals.",
+        "Clinical trials demonstrate that a DASH diet, rich in potassium, magnesium, calcium, and lean proteins, blocks excess sodium accumulation and naturally dilates blood vessels.",
+        "Key food recommendations: Green leafy vegetables (spinach, kale), sweet berries (blueberries, strawberries), heavy dietary fibers like oats, and healthy mineral-rich pumpkin seeds.",
+        "Additionally, strictly limiting sodium to under 1,500mg daily combined with light cardio exercise leads to a substantial reduction in both systolic and diastolic blood pressure within just 14 days of compliance."
+      ] : [
+        "Chế độ ăn kiềm chế cao huyết áp (DASH) là một tiêu chuẩn dinh dưỡng được khuyến cáo rộng rãi giúp hạ áp lực động mạch hệ thống một cách an toàn mà không cần lạm dụng thuốc Tây.",
+        "Các thử nghiệm lâm sàng chỉ ra rằng DASH tập trung vào thực phẩm giàu Kali, Magiê, Canxi và Protein nạc nhằm ngăn tích tụ Natri dư thừa, đồng thời làm giãn nở mạch máu tự nhiên.",
+        "Khuyến nghị thực phẩm cốt lõi: Rau xanh đậm (cải bó xôi, cải xoăn), trái cây mọng màu (việt quất, dâu tây), chất xơ hòa tan từ yến mạch và các loại hạt dồi dào khoáng chất.",
+        "Đồng thời, việc hạn chế muối dưới 1.500mg mỗi ngày kết hợp với vận động aerobic nhẹ nhàng sẽ tạo ra cải thiện rõ rệt chỉ sau 14 ngày tuân thủ nghiêm ngặt."
+      ],
+      medicalReviewer: "Dr. Elena Vance, MD"
+    },
+    {
+      id: "art-2",
+      title: lang === 'en' ? "Crucial Benefits of Fermented Food for Gut Microbiome" : "Lợi ích của thực phẩm lên men đối với đại tràng",
+      category: lang === 'en' ? "Nutrition" : "Dinh dưỡng",
+      readTime: lang === 'en' ? "4 min read" : "4 phút đọc",
+      date: lang === 'en' ? "Apr 10, 2026" : "10 Th04, 2026",
+      image: "https://images.unsplash.com/photo-1547516508-4c1f9c7c4ec3?auto=format&fit=crop&q=80&w=800",
+      summary: lang === 'en'
+        ? "How active probiotics from traditional fermentation soothe clinical colitis and boost digest flow."
+        : "Cách lợi khuẩn sống từ quá trình lên men giúp xoa dịu niêm mạc đại tràng co thắt và tăng cường tiêu hóa.",
+      content: lang === 'en' ? [
+        "The human colon houses billions of microbial agents that dictate localized gut immunity. Patients suffering from chronic colitis or IBS often display severely compromised flora diversity.",
+        "Fermented foods undergo anaerobic conversion which nurtures highly resilient, healthy bacterial cultures like Lactobacillus and Bifidobacterium.",
+        "Consuming active unsweetened yogurt, kefir, traditional kimchi, or mild pickled vegetables directly repopulates mucosal barriers, drastically cutting flatulence, bloating, and internal tissue spasms.",
+        "Integrate one serving of live-culture probiotic food daily, preferably during lunch, to protect gut walls from pathogenic attacks."
+      ] : [
+        "Đại tràng con người là nơi cư ngụ của hàng tỷ sinh vật quyết định hệ miễn dịch tại chỗ. Bệnh nhân viêm đại tràng co thắt hoặc hội chứng ruột kích thích (IBS) thường có hệ vi sinh bị tổn hại nặng nề.",
+        "Thực phẩm lên men trải qua quá trình chuyển hóa kị khí sản sinh các chủng khuẩn Axit Lactic cực kỳ bền bỉ bảo vệ cơ thể như Lactobacillus và Bifidobacterium.",
+        "Sử dụng sữa chua không đường, nấm sữa kefir, kim chi hoặc dưa chua nhẹ giúp tái thiết lập hàng rào niêm mạc, giảm thiểu rõ rệt tình trạng đầy chướng bụng, ợ hơi và các cơn co thắt đột ngột.",
+        "Hãy bổ sung một phần thực phẩm lên men chứa lợi khuẩn sống vào thực đơn trưa mỗi ngày để che chở hệ tiêu hóa khỏi sự xâm nhập của vi khuẩn có hại."
+      ],
+      medicalReviewer: "Professor Minh Tri, Gastroenterologist"
+    },
+    {
+      id: "art-3",
+      title: lang === 'en' ? "Top 5 Dietary Seeds Recommended for Diabetes Care" : "Top 5 loại hạt tốt nhất cho bệnh nhân tiểu đường",
+      category: lang === 'en' ? "Healthy Tips" : "Mẹo hay",
+      readTime: lang === 'en' ? "6 min read" : "6 phút đọc",
+      date: lang === 'en' ? "Apr 08, 2026" : "08 Th04, 2026",
+      image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&q=80&w=800",
+      summary: lang === 'en'
+        ? "Discover high fiber seeds that effectively blunt glucose spikes and restore optimal insulin response."
+        : "Khám phá các loại hạt siêu giàu xơ giúp làm chậm hấp thu đường, duy trì mức đường huyết lý tưởng.",
+      content: lang === 'en' ? [
+        "Controlling blood sugar transitions after carbohydrate consumption is a critical ongoing goal in clinical Type-2 Diabetes management.",
+        "Certain seeds are nutritional keys because their high mucilage fiber creates a gel-like paste in the upper intestine, slowing down glucose absorption rates.",
+        "Chia seeds, flaxseeds, pumpkin seeds, almonds, and sunflower seeds contain essential omega-3 fatty acids that enhance cell membrane permeability, facilitating smoother insulin action.",
+        "Ensure to grind flaxseeds before consuming and drink plenty of water to assist the soluble fibers in doing their therapeutic work."
+      ] : [
+        "Kiểm soát tốc độ gia tăng đường huyết sau bữa ăn là mục tiêu tối quan trọng trong việc điều trị và chung sống an toàn với bệnh tiểu đường tuýp 2.",
+        "Một số loại hạt được coi là siêu thực phẩm vì chất xơ hòa tan dồi dào tạo nên lớp gel tự nhiên ở ruột non, trì hoãn cơ chế giải hấp đường vào máu.",
+        "Hạt chia, hạt lanh, hạt bí ngô, hạnh nhân và hạt hướng dương giàu axit béo omega-3 dồi dào giúp làm mượt và mềm hóa màng tế bào, thúc đẩy insulin hoạt động hiệu quả hơn.",
+        "Hãy xay nhỏ hạt lanh trước khi ăn và đảm bảo uống đủ nước để phát huy tối đa tác dụng cơ học xơ của chúng."
+      ],
+      medicalReviewer: "Dr. Sarah Jenkins, Endocrinologist"
+    },
+    {
+      id: "art-4",
+      title: lang === 'en' ? "Prevention of Kidney Stones Through Smart Fluid & Food Choices" : "Kiểm soát sỏi thận qua thói quen dinh dưỡng",
+      category: lang === 'en' ? "Kidney Care" : "Thận khỏe",
+      readTime: lang === 'en' ? "5 min read" : "5 phút đọc",
+      date: lang === 'en' ? "Apr 05, 2026" : "05 Th04, 2026",
+      image: "https://images.unsplash.com/photo-1550572017-edd951b55104?auto=format&fit=crop&q=80&w=800",
+      summary: lang === 'en'
+        ? "Key changes in hydration, calcium coordination, and sodium ceilings to halt oxalate stone formation."
+        : "Những thay đổi cốt lõi về nước uống, phân phối canxi dồi dào và kiểm soát natri để ngăn sỏi oxalate.",
+      content: lang === 'en' ? [
+        "A large percentage of clinical kidney stones are calcium oxalate formations. Fortunately, targeted dietary steps are surprisingly powerful at halting kidney crystallization.",
+        "The most critical rule is maintaining consistent daily urine volume above 2 liters, meaning a steady intake of around 2.5 to 3 liters of fresh drinking water.",
+        "Interestingly, avoiding calcium completely is a mistake. Eating dietary calcium concurrently with oxalate-rich foods actually binds Oxalate in the digestive tract, preventing it from reaching the urinary tract.",
+        "Red meats, spinach, rhubarb, chocolate, and high-sodium processed foods must be sensibly avoided to lower crystallizing factors in the kidneys."
+      ] : [
+        "Đại đa số các ca sỏi thận trong y khoa là kết tủa của canxi oxalate. Thật may mắn, các can thiệp ăn uống phù hợp mang lại hiệu quả rất cao để phòng tránh sỏi tích tụ thêm.",
+        "Nguyên tắc cốt lõi là duy trì lưu lượng nước tiểu hàng ngày trên 2 lít, tương đương tiêu thụ đều đặn khoảng 2.5 đến 3 lít nước lọc sạch suốt cả ngày.",
+        "Trái ngược với suy nghĩ sai lầm là kiêng canxi, việc nạp canxi hữu cơ qua thực phẩm kèm theo đồ ăn chứa oxalate giúp liên kết oxalate ngay tại ruột, giảm đào thải qua đường tiểu.",
+        "Các loại thịt đỏ, rau bina, socola và đồ hộp mặn cần được cắt giảm tối đa để loại bỏ mầm mống gây sỏi kết tụ tại bể thận."
+      ],
+      medicalReviewer: "Dr. Andrew Low, Nephrologist"
+    },
+    {
+      id: "art-5",
+      title: lang === 'en' ? "Natural Fatty Liver Management via Soluble Fiber Intake" : "Giảm mỡ gan tự nhiên bằng chất xơ hòa tan",
+      category: lang === 'en' ? "Detox Liver" : "Giải độc",
+      readTime: lang === 'en' ? "5 min read" : "5 phút đọc",
+      date: lang === 'en' ? "Apr 02, 2026" : "02 Th04, 2026",
+      image: "https://images.unsplash.com/photo-1610970881699-44a5587caa16?auto=format&fit=crop&q=80&w=800",
+      summary: lang === 'en'
+        ? "How soluble fibers capture lipid acids in the digestive system, systematically detoxifying liver cells."
+        : "Cách thức chất xơ hòa tan giữ bẫy thành phần mỡ tích tụ, hỗ trợ chuyển hóa thải độc tế bào gan nhanh chóng.",
+      content: lang === 'en' ? [
+        "Non-alcoholic fatty liver disease (NAFLD) is directly tied to metabolic syndrome and unhealthy blood lipid balances.",
+        "Soluble fibers absorb water as they go through digestive routes, turning into sticky viscous cushions that lock inside cholesterol molecules and bile.",
+        "When these cholesterols are excreted instead of reabsorbed, the liver must harvest stored lipids to create replacement bile, naturally using up fatty fat buildup.",
+        "Outstanding dietary options include ripe avocados, okra, rolled oats, sweet potatoes, and organic chia seeds."
+      ] : [
+        "Thừa mỡ tế bào gan (NAFLD) không do rượu liên quan mật thiết đến hội chứng chuyển hóa và sự rối loạn các thành phần lipid trong máu.",
+        "Chất xơ hòa tan khi đi qua hành trình tiêu hóa sẽ hút nước tạo thành lớp đệm nhầy giữ lấy nguyên tử cholesterol và dịch mật.",
+        "Việc đào thải lượng mỡ này ra ngoài buộc gan phải lấy mỡ dự trữ sẵn có tại nhu mô để tổng hợp dịch mật mới, trực tiếp làm suy giảm chỉ số mỡ gan có hại.",
+        "Những lựa chọn giàu xơ tối ưu bao gồm quả bơ chín, đậu bắp, yến mạch nguyên cám, khoai lang và hạt chia hữu cơ."
+      ],
+      medicalReviewer: "Dr. Christopher Chen, Hepatologist"
+    },
+    {
+      id: "art-6",
+      title: lang === 'en' ? "Uric Acid Control: Comprehensive Eating Guide for Gout Patients" : "Chế độ ăn kiêng acid uric cho người mắc bệnh Gout",
+      category: lang === 'en' ? "Joint Care" : "Khớp khỏe",
+      readTime: lang === 'en' ? "6 min read" : "6 phút đọc",
+      date: lang === 'en' ? "Mar 28, 2026" : "28 Th03, 2026",
+      image: "https://images.unsplash.com/photo-1505252585461-04db1eba846d?auto=format&fit=crop&q=80&w=800",
+      summary: lang === 'en'
+        ? "Slick purine restriction methods and water loading to lower painful joint crystal flare-ups safely."
+        : "Kỹ thuật kiểm soát nồng độ purine và đẩy mạnh bù nước giúp xoa dịu, ngừa đau khớp do kết tinh axit uric.",
+      content: lang === 'en' ? [
+        "Gout is characterized by painful articular inflammation caused by monosodium urate monohydrate crystals depositing in joints when serum uric acid exceeds normal saturation thresholds.",
+        "Minimizing clinical purines from red meats (beef, lamb), organs, rich seafood (shrimp, crabs, sardines), and avoiding any alcohol is highly necessary.",
+        "To hasten excretion of existing uric acid, stay exceptionally hydrated. Eating low-fat dairy and vitamin-C dense cherries has been proven to lower circulating serum levels.",
+        "Consuming fresh cucumbers, celery juice, and alkaline water also supports systemic uric acid dissolution and excretion."
+      ] : [
+        "Cơn đau Gout xuất hiện do các tinh thể axit uric muối sắc nhọn lắng đọng tại ổ khớp khi nồng độ acid trong máu vượt ngưỡng bão hòa sinh học.",
+        "Cần kiêng tuyệt đối thực phẩm dồi dào nhân purine như cấu trúc thịt đỏ (bò, dê), nội tạng động vật, hải sản vỏ cứng và các chất kích thích có cồn.",
+        "Để tăng tốc độ đào thải axit uric cũ, hãy uống nước liên tục kết hợp sữa ít béo và quả anh đào chín mọng (cherry) - vốn đã được lâm sàng chứng minh giúp giảm axit máu rất nhanh.",
+        "Dưa chuột tươi, nước ép cần tây và các loại nước có tính kiềm nhẹ cũng hỗ trợ hòa tan và rửa trôi axit dư thừa qua đường niệu."
+      ],
+      medicalReviewer: "Dr. Olivia Bennett, Rheumatologist"
+    },
+    {
+      id: "art-7",
+      title: lang === 'en' ? "Strengthening Your Gastric Barrier Against Painful Ulcers" : "Bảo vệ niêm mạc dạ dày khỏi viêm loét",
+      category: lang === 'en' ? "Stomach Care" : "Dạ dày",
+      readTime: lang === 'en' ? "5 min read" : "5 phút đọc",
+      date: lang === 'en' ? "Mar 25, 2026" : "25 Th03, 2026",
+      image: "https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&q=80&w=800",
+      summary: lang === 'en'
+        ? "Soothing mucosa with coating agents like honey, okra, and non-acidic healing nutrients."
+        : "Bao phủ và tái tạo niêm mạc tổn thương nhờ mật ong, đậu bắp bổ sung dưỡng chất xoa dịu cơn trào ngược.",
+      content: lang === 'en' ? [
+        "Gastritis and peptic ulcers happen when corrosive hydrochloric digest acids wear down the stomach's protective mucin lining.",
+        "Avoiding aggressive irritants like chili peppers, black peppers, acidic citruses, caffeine, and heavy deep-fried fat is the first rule.",
+        "Embrace lubricating protective foods. The natural mucilage inside okra, boiled lotus roots, and warm organic honey coats raw ulcers, offering instant soothing relief.",
+        "Eat in smaller quantities at highly structured time intervals to prevent sudden stomach distention and excessive acid outputs from empty states."
+      ] : [
+        "Viêm loét dạ dày tá tràng xảy ra do axit clohydric ăn mòn lớp chất nhầy mucin bảo vệ thành nội tạng, tạo nên tổn thương đỏ nông hoặc loét sâu.",
+        "Cần hạn chế tối đa các tác nhân kích thích mạnh như ớt, tiêu đen, hoa quả quá chua, cafein đậm đặc và đồ chiên rán ngập dầu mỡ khó tiêu.",
+        "Chào đón các thực phẩm sinh chất nhầy để bao bọc niêm mạc. Chất nhầy tự nhiên trong quả đậu bắp, củ sen hầm và mật ong ấm tạo lớp màng dịu loét tức thì.",
+        "Chia nhỏ cự ly các bữa ăn theo khung giờ cố định nhằm tránh dạ dày quá đói sinh axit dư hay quá no gây áp lực cơ học lên vùng thương tổn."
+      ],
+      medicalReviewer: "Dr. Arthur Pendelton, Gastrologist"
+    },
+    {
+      id: "art-8",
+      title: lang === 'en' ? "Optimal Nutrient Selections for Post-Recovery Cardiovascular Care" : "Dinh dưỡng phục hồi tim mạch",
+      category: lang === 'en' ? "Cardiovascular" : "Tim mạch",
+      readTime: lang === 'en' ? "5 min read" : "5 phút đọc",
+      date: lang === 'en' ? "Mar 20, 2026" : "20 Th03, 2026",
+      image: "https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?auto=format&fit=crop&q=80&w=800",
+      summary: lang === 'en'
+        ? "Harnessing omega-3 acids, vascular fibers, and active heart-healthy plant sterols."
+        : "Tích lũy lipid omega-3, chất xơ dẻo dai và các hoạt chất sterol thực vật nâng niu độ đàn hồi thành mạch.",
+      content: lang === 'en' ? [
+        "Vascular resilience and healthy cholesterol levels dictate long-term heart vigor and blood flow efficiency.",
+        "Active omega-3 fatty acids from walnuts, flaxseeds, and olive oil keep arterial walls highly elastic and directly curb plaque accumulation.",
+        "Incorporate foods containing phytosterols like broccoli, Brussels sprouts, and whole wheat which naturally compete with cholesterol absorption pathways.",
+        "Reduce systemic pressure by limiting commercial packaged ingredients containing high processing sodium percentages, replacing with garden-fresh herbs."
+      ] : [
+        "Độ đàn hồi dẻo dai của mạch máu và kiểm soát mảng bám mỡ quyết định trực tiếp hiệu năng co bóp và sức bền tổng thể của trái tim.",
+        "Thành phần axit béo không bão hòa Omega-3 từ quả óc chó, dầu oliu nguyên chất giúp lòng mạch thông thoáng, tránh xơ cứng động mạch thứ phát.",
+        "Khuyên dùng các thực phẩm tự nhiên giàu sterol như súp lơ xanh, măng tây, lúa mạch nguyên cám giúp kìm hãm hấp thụ cholesterol xấu.",
+        "Cắt giảm tải trọng cho tim bằng việc hạn chế tối đa natri trong gia vị công nghiệp chế biến sẵn, thay bằng các loại rau thơm tươi lành."
+      ],
+      medicalReviewer: "Dr. Sophia Reynolds, FACC"
+    }
+  ];
+};
+
+const AllArticlesModal = ({ 
+  isOpen, 
+  onClose, 
+  lang,
+  selectedArticle,
+  setSelectedArticle
+}: { 
+  isOpen: boolean, 
+  onClose: () => void, 
+  lang: 'vi' | 'en',
+  selectedArticle: any | null,
+  setSelectedArticle: (article: any | null) => void
+}) => {
+  const articles = getHealthArticlesData(lang);
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => {
+              setSelectedArticle(null);
+              onClose();
+            }}
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]"
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-4xl h-[90vh] bg-white rounded-[2.5rem] shadow-2xl z-[101] flex flex-col overflow-hidden border border-slate-100"
+          >
+            {/* Header */}
+            <div className="p-6 md:p-8 bg-slate-50 border-b border-slate-100 flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-3">
+                {selectedArticle ? (
+                  <button 
+                    onClick={() => setSelectedArticle(null)}
+                    className="w-10 h-10 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center transition-all text-slate-600 shadow-sm"
+                  >
+                    <ChevronDown size={20} className="rotate-90" />
+                  </button>
+                ) : (
+                  <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                    <Activity size={20} />
+                  </div>
+                )}
+                <div>
+                  <h2 className="text-lg md:text-xl font-black text-slate-900 tracking-tight font-sans">
+                    {selectedArticle 
+                      ? (lang === 'en' ? 'Reading Article' : 'Đọc bài viết') 
+                      : (lang === 'en' ? 'Health Knowledge Library' : 'Thư viện kiến thức sức khỏe')}
+                  </h2>
+                  <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                    {selectedArticle 
+                      ? selectedArticle.category 
+                      : (lang === 'en' ? '8 Curated Clinical Insights' : '8 chuyên đề nghiên cứu lâm sàng')}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => {
+                  setSelectedArticle(null);
+                  onClose();
+                }}
+                className="w-10 h-10 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center transition-all text-slate-400 hover:text-slate-600 shadow-sm"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scrollable Container */}
+            <div className="flex-grow overflow-y-auto p-6 md:p-8 custom-scrollbar bg-slate-50/20">
+              {selectedArticle ? (
+                /* Article Detail View */
+                <div className="max-w-2xl mx-auto space-y-6 md:space-y-8">
+                  {/* Hero Image */}
+                  <div className="relative aspect-[16/9] rounded-3xl overflow-hidden shadow-md shadow-slate-100">
+                    <img 
+                      src={selectedArticle.image} 
+                      alt={selectedArticle.title} 
+                      className="w-full h-full object-cover" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 to-transparent" />
+                    <div className="absolute bottom-6 left-6 right-6 flex items-center justify-between">
+                      <span className="px-3.5 py-1.5 bg-emerald-600/95 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-sm">
+                        {selectedArticle.category}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Metadata */}
+                  <div className="flex flex-wrap items-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-4">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar size={14} className="text-emerald-500" />
+                      <span>{selectedArticle.date}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock size={14} className="text-blue-500" />
+                      <span>{selectedArticle.readTime}</span>
+                    </div>
+                    {selectedArticle.medicalReviewer && (
+                      <div className="flex items-center gap-1.5 ml-auto sm:ml-0 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-md font-bold text-[9px] lowercase tracking-normal">
+                        <ShieldCheck size={12} className="text-emerald-600 uppercase" />
+                        reviewed by {selectedArticle.medicalReviewer}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Typography Content */}
+                  <div className="space-y-6 text-slate-700 leading-relaxed text-sm md:text-base">
+                    <h1 className="text-xl md:text-3xl font-black text-slate-900 leading-[1.2] tracking-tight">
+                      {selectedArticle.title}
+                    </h1>
+                    
+                    <p className="font-bold text-slate-800 text-sm md:text-lg border-l-4 border-emerald-500 pl-4 py-1 italic bg-emerald-50/30 rounded-r-xl">
+                      {selectedArticle.summary}
+                    </p>
+
+                    {selectedArticle.content.map((p: string, idx: number) => (
+                      <p key={idx} className="font-medium text-slate-600 leading-relaxed">
+                        {p}
+                      </p>
+                    ))}
+                  </div>
+
+                  <div className="border-t border-slate-100 pt-6 flex justify-between items-center">
+                    <button 
+                      onClick={() => setSelectedArticle(null)}
+                      className="px-6 py-2.5 bg-slate-100 text-slate-700 font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-slate-200 transition-colors"
+                    >
+                      {lang === 'en' ? 'Back to Library' : 'Quay lại thư viện'}
+                    </button>
+                    <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-full flex items-center gap-1">
+                      <Sparkles size={12} />
+                      NutriCare Clinical Verified
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                /* Grid Library View */
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {articles.map((news) => (
+                      <div 
+                        key={news.id}
+                        onClick={() => setSelectedArticle(news)}
+                        className="bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm hover:shadow-md hover:border-emerald-500 transition-all cursor-pointer group flex flex-col justify-between h-full relative overflow-hidden"
+                      >
+                        <div>
+                          <div className="relative aspect-[16/10] rounded-2xl overflow-hidden mb-5">
+                            <img 
+                              src={news.image} 
+                              alt={news.title} 
+                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                            />
+                            <div className="absolute top-4 left-4 px-3 py-1 bg-white/95 backdrop-blur text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm">
+                              {news.category}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                            <span>{news.date}</span>
+                            <span className="w-1 h-1 rounded-full bg-slate-200" />
+                            <span>{news.readTime}</span>
+                          </div>
+
+                          <h3 className="text-base font-black text-slate-900 leading-[1.3] group-hover:text-emerald-600 transition-colors mb-2">
+                            {news.title}
+                          </h3>
+
+                          <p className="text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed">
+                            {news.summary}
+                          </p>
+                        </div>
+
+                        <div className="mt-5 pt-4 border-t border-slate-100 flex justify-between items-center shrink-0">
+                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                            <ShieldCheck size={12} className="text-emerald-500" />
+                            Medical Reviewed
+                          </span>
+                          <span className="text-xs font-black text-emerald-600 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                            {lang === 'en' ? 'Read article' : 'Đọc bài viết'} 
+                            <ChevronRight size={14} />
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [lang, setLang] = useState<'vi' | 'en'>(() => {
@@ -1480,6 +1880,8 @@ export default function App() {
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [healthTips, setHealthTips] = useState<HealthTip[]>([]);
   const [loadingTips, setLoadingTips] = useState(false);
+  const [viewingAllArticles, setViewingAllArticles] = useState(false);
+  const [selectedArticle, setSelectedArticle] = useState<any | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
@@ -2267,7 +2669,10 @@ export default function App() {
                 <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight">{activeText.newsTitle}</h2>
                 <p className="text-lg text-slate-500 font-medium max-w-lg">{activeText.newsDesc}</p>
               </div>
-              <button className="group flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-900 rounded-xl text-sm font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all">
+              <button 
+                onClick={() => setViewingAllArticles(true)}
+                className="group flex items-center gap-2 px-6 py-3 bg-slate-100 text-slate-900 rounded-xl text-sm font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all"
+              >
                 {activeText.viewAllNews} <ChevronRight size={18} className="transition-transform group-hover:translate-x-1" />
               </button>
             </div>
@@ -2303,6 +2708,14 @@ export default function App() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1, duration: 0.5 }}
                   className="group cursor-pointer"
+                  onClick={() => {
+                    const articles = getHealthArticlesData(lang);
+                    const matched = articles.find(art => art.id === `art-${i+1}`);
+                    if (matched) {
+                      setSelectedArticle(matched);
+                      setViewingAllArticles(true);
+                    }
+                  }}
                 >
                   <div className="relative aspect-[16/10] rounded-[2.5rem] overflow-hidden mb-8 shadow-xl shadow-slate-200/50">
                     <img src={news.image} alt={news.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
@@ -2449,6 +2862,14 @@ export default function App() {
             © 2024 NutriCare Health AI. Powered by Gemini.
           </div>
         </footer>
+
+        <AllArticlesModal 
+          isOpen={viewingAllArticles} 
+          onClose={() => setViewingAllArticles(false)} 
+          lang={lang} 
+          selectedArticle={selectedArticle} 
+          setSelectedArticle={setSelectedArticle} 
+        />
       </div>
     );
   }
@@ -2867,7 +3288,11 @@ export default function App() {
                   />
                 </section>
 
-                <HealthArticlesSection tips={healthTips} loading={loadingTips} />
+                <HealthArticlesSection 
+                  tips={healthTips} 
+                  loading={loadingTips} 
+                  onViewAll={() => setViewingAllArticles(true)} 
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Avoid section */}
@@ -2975,6 +3400,14 @@ export default function App() {
       {view !== 'onboarding' && profile && (
         <AIChatbot profile={profile} />
       )}
+
+      <AllArticlesModal 
+        isOpen={viewingAllArticles} 
+        onClose={() => setViewingAllArticles(false)} 
+        lang={lang} 
+        selectedArticle={selectedArticle} 
+        setSelectedArticle={setSelectedArticle} 
+      />
     </div>
   );
 }
