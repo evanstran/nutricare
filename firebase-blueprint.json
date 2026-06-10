@@ -30,6 +30,7 @@
         "name": { "type": "string" },
         "category": { "type": "string" },
         "description": { "type": "string" },
+        "imageUrl": { "type": "string" },
         "shouldEat": { "type": "array" },
         "shouldAvoid": { "type": "array" },
         "sampleMenu": { "type": "array" }

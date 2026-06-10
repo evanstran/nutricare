@@ -4206,6 +4206,34 @@ function OnboardingScreen({ onSubmit, user }: { onSubmit: (d: Partial<UserProfil
   );
 }
 
+const removeVietnameseTones = (str: string) => {
+  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, "a");
+  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, "e");
+  str = str.replace(/ì|í|ị|ỉ|ĩ/g, "i");
+  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, "o");
+  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, "u");
+  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, "y");
+  str = str.replace(/đ/g, "d");
+  str = str.replace(/À|Á|Ạ|Ả|Ã|Â|Ầ|Ấ|Ậ|Ẩ|Ẫ|Ă|Ằ|Ắ|Ặ|Ẳ|Ẵ/g, "A");
+  str = str.replace(/È|É|Ẹ|Ẻ|Ẽ|Ê|Ề|Ế|Ệ|Ể|Ễ/g, "E");
+  str = str.replace(/Ì|Í|Ị|Ỉ|Ĩ/g, "I");
+  str = str.replace(/Ò|Ó|Ọ|Ỏ|Õ|Ô|Ồ|Ố|Ộ|Ổ|Ỗ|Ơ|Ờ|Ớ|Ợ|Ở|Ỡ/g, "O");
+  str = str.replace(/Ù|Ú|Ụ|Ủ|Ũ|Ư|Ừ|Ứ|Ự|Ử|Ữ/g, "U");
+  str = str.replace(/Ỳ|Ý|Y|Ỷ|Ỹ/g, "Y");
+  str = str.replace(/Đ/g, "D");
+  str = str.replace(/\u0300|\u0301|\u0303|\u0309|\u0323/g, "");
+  str = str.replace(/\u02C6|\u0306|\u031B/g, "");
+  return str;
+};
+
+const slugify = (str: string) => {
+  return removeVietnameseTones(str)
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[\s-]+/g, '-');
+};
+
 function AdminView({ onBack }: { onBack: () => void }) {
   const [isAdminDarkMode, setIsAdminDarkMode] = useState(false);
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -4215,6 +4243,24 @@ function AdminView({ onBack }: { onBack: () => void }) {
   const [adminTab, setAdminTab] = useState<'users' | 'diseases'>('users');
   const [diseases, setDiseases] = useState<Disease[]>([]);
   const [isSeeding, setIsSeeding] = useState(false);
+
+  const [showAddDiseaseModal, setShowAddDiseaseModal] = useState(false);
+  const [newDiseaseId, setNewDiseaseId] = useState('');
+  const [isIdManuallyEdited, setIsIdManuallyEdited] = useState(false);
+  const [newDiseaseName, setNewDiseaseName] = useState('');
+  const [newDiseaseCategory, setNewDiseaseCategory] = useState('');
+  const [newDiseaseDescription, setNewDiseaseDescription] = useState('');
+  const [newDiseaseImageUrl, setNewDiseaseImageUrl] = useState('');
+  const [newDiseaseShouldEat, setNewDiseaseShouldEat] = useState('');
+  const [newDiseaseShouldAvoid, setNewDiseaseShouldAvoid] = useState('');
+  const [newDiseaseSampleMenu, setNewDiseaseSampleMenu] = useState('');
+  const [isAddingDisease, setIsAddingDisease] = useState(false);
+
+  useEffect(() => {
+    if (!isIdManuallyEdited) {
+      setNewDiseaseId(slugify(newDiseaseName));
+    }
+  }, [newDiseaseName, isIdManuallyEdited]);
 
   useEffect(() => {
     fetchUsers();
@@ -4348,6 +4394,80 @@ function AdminView({ onBack }: { onBack: () => void }) {
       setDiseases(prev => prev.map(d => d.id === id ? { ...d, category } : d));
     } catch (err) {
       alert("Lỗi khi cập nhật danh mục.");
+    }
+  };
+
+  const handleAddDisease = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDiseaseName.trim()) {
+      alert("Vui lòng nhập tên bệnh lý.");
+      return;
+    }
+    const finalId = newDiseaseId.trim() || slugify(newDiseaseName);
+    if (!finalId) {
+      alert("Vui lòng nhập hoặc tự động tạo mã định danh ID.");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_\-]+$/.test(finalId)) {
+      alert("Mã định danh ID chỉ được chứa các ký tự chữ cái, số, gạch dưới (_) hoặc gạch ngang (-).");
+      return;
+    }
+    if (!newDiseaseCategory || newDiseaseCategory === 'all') {
+      alert("Vui lòng chọn danh mục.");
+      return;
+    }
+    if (!newDiseaseDescription.trim()) {
+      alert("Vui lòng nhập mô tả bệnh lý.");
+      return;
+    }
+    if (!newDiseaseImageUrl.trim() || !newDiseaseImageUrl.startsWith('http')) {
+      alert("Vui lòng nhập URL hình ảnh gợi ý hợp lệ (bắt đầu bằng http hoặc https).");
+      return;
+    }
+
+    setIsAddingDisease(true);
+
+    const parseListInput = (input: string) => {
+      return input
+        .split(/[,\n]/)
+        .map(item => item.trim())
+        .filter(item => item.length > 0);
+    };
+
+    const newDiseaseData: Disease = {
+      id: finalId,
+      name: newDiseaseName.trim(),
+      category: newDiseaseCategory,
+      description: newDiseaseDescription.trim(),
+      imageUrl: newDiseaseImageUrl.trim(),
+      shouldEat: parseListInput(newDiseaseShouldEat),
+      shouldAvoid: parseListInput(newDiseaseShouldAvoid),
+      sampleMenu: parseListInput(newDiseaseSampleMenu)
+    };
+
+    try {
+      await setDoc(doc(db, 'diseases', finalId), newDiseaseData);
+      alert("Đã thêm bệnh lý mới thành công!");
+      
+      // Refresh list
+      fetchDiseases();
+
+      // Reset state and close modal
+      setNewDiseaseName('');
+      setNewDiseaseId('');
+      setIsIdManuallyEdited(false);
+      setNewDiseaseCategory('');
+      setNewDiseaseDescription('');
+      setNewDiseaseImageUrl('');
+      setNewDiseaseShouldEat('');
+      setNewDiseaseShouldAvoid('');
+      setNewDiseaseSampleMenu('');
+      setShowAddDiseaseModal(false);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `diseases/${finalId}`);
+      alert("Lỗi khi thêm bệnh lý mới vào hệ thống.");
+    } finally {
+      setIsAddingDisease(false);
     }
   };
 
@@ -4503,18 +4623,26 @@ function AdminView({ onBack }: { onBack: () => void }) {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className={`p-6 rounded-3xl border shadow-sm flex justify-between items-center ${isAdminDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
+          <div className={`p-6 rounded-3xl border shadow-sm flex flex-col sm:flex-row gap-4 justify-between sm:items-center transition-colors ${isAdminDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
             <div>
               <h3 className={`text-lg font-bold ${isAdminDarkMode ? 'text-white' : 'text-slate-900'}`}>Danh mục Bệnh lý</h3>
               <p className={`text-sm ${isAdminDarkMode ? 'text-slate-500' : 'text-slate-500'}`}>Cấu trúc dữ liệu master cho các nhóm bệnh.</p>
             </div>
-            <button 
-              onClick={seedDiseases}
-              disabled={isSeeding}
-              className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-50 ${isAdminDarkMode ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
-            >
-              {isSeeding ? 'Đang xử lý...' : 'Khởi tạo Dữ liệu (Seed)'}
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button 
+                onClick={seedDiseases}
+                disabled={isSeeding}
+                className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-50 ${isAdminDarkMode ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30' : 'bg-emerald-600 text-white hover:bg-emerald-700'}`}
+              >
+                {isSeeding ? 'Đang xử lý...' : 'Khởi tạo Dữ liệu (Seed)'}
+              </button>
+              <button 
+                onClick={() => setShowAddDiseaseModal(true)}
+                className={`px-6 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest transition-all flex items-center gap-2 ${isAdminDarkMode ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                <Plus size={14} /> Thêm bệnh lý
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -4524,9 +4652,18 @@ function AdminView({ onBack }: { onBack: () => void }) {
               </div>
             ) : diseases.map(d => (
               <div key={d.id} className={`rounded-3xl border shadow-sm overflow-hidden flex flex-col transition-all ${isAdminDarkMode ? 'bg-slate-900 border-slate-800 hover:border-emerald-500/50' : 'bg-white border-slate-100 hover:border-emerald-200'}`}>
-                <div className="h-20 relative bg-emerald-950 flex items-center justify-center">
-                  <Activity size={32} className="text-emerald-500/50" />
-                  <div className={`absolute top-4 left-4 backdrop-blur px-3 py-1 rounded-full shadow-sm bg-black/40 text-white`}>
+                <div className="h-32 relative bg-emerald-950/20 overflow-hidden flex items-center justify-center border-b border-slate-100 dark:border-slate-850">
+                  {d.imageUrl ? (
+                    <img 
+                      src={d.imageUrl} 
+                      alt={d.name} 
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover opacity-90 hover:scale-105 transition-transform duration-500" 
+                    />
+                  ) : (
+                    <Activity size={36} className="text-emerald-500/40" />
+                  )}
+                  <div className={`absolute top-4 left-4 backdrop-blur px-3 py-1 rounded-full shadow-sm bg-black/40 text-white z-10`}>
                     <span className="text-[10px] font-black uppercase tracking-tighter">{d.id}</span>
                   </div>
                 </div>
@@ -4544,7 +4681,7 @@ function AdminView({ onBack }: { onBack: () => void }) {
                        ))}
                      </select>
                    </div>
-                   <p className={`text-xs leading-relaxed line-clamp-3 mb-4 ${isAdminDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{d.description}</p>
+                   <p className={`text-xs leading-relaxed line-clamp-3 mb-4 ${isAdminDarkMode ? 'text-slate-400' : 'text-slate-550'}`}>{d.description}</p>
                    <div className={`mt-auto pt-4 border-t flex justify-between items-center text-[10px] font-black uppercase tracking-widest ${isAdminDarkMode ? 'border-slate-800 text-slate-500' : 'border-slate-50 text-slate-400'}`}>
                       <span>{d.shouldEat?.length || 0} món nên ăn</span>
                       <span className={`w-1.5 h-1.5 rounded-full ${isAdminDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`} />
