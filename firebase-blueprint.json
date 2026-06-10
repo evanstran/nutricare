@@ -16,6 +16,7 @@
         "allergies": { "type": "array" },
         "habits": { "type": "string" },
         "activityLevel": { "type": "string" },
+        "weightHistory": { "type": "array", "description": "Historical logs of weight and corresponding BMI values" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["uid", "name", "email"]

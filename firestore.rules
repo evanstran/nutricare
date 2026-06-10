@@ -61,7 +61,7 @@ service cloud.firestore {
             incoming().get('email', existing().email) == existing().email &&
             incoming().get('uid', existing().uid) == existing().uid &&
             // Total control over which keys can change
-            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'age', 'gender', 'height', 'weight', 'diseases', 'allergies', 'habits', 'activityLevel', 'subscriptionTier', 'planEndDate', 'createdAt'])
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'age', 'gender', 'height', 'weight', 'diseases', 'allergies', 'habits', 'activityLevel', 'subscriptionTier', 'planEndDate', 'createdAt', 'weightHistory'])
            ));
     }
 

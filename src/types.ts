@@ -1,3 +1,9 @@
+export interface WeightEntry {
+  date: string; // "YYYY-MM-DD"
+  weight: number;
+  bmi: number;
+}
+
 export interface UserProfile {
   uid: string;
   name: string;
@@ -15,6 +21,7 @@ export interface UserProfile {
   role?: 'admin' | 'user';
   likedIngredients?: string[];
   dislikedIngredients?: string[];
+  weightHistory?: WeightEntry[];
   createdAt: string;
 }
 

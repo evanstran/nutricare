@@ -33,6 +33,11 @@ import {
   LayoutGrid,
   Search,
   Check,
+  Lock,
+  Mail,
+  AlertTriangle,
+  ExternalLink,
+  ShieldAlert,
   Apple,
   Wind,
   Moon,
@@ -44,7 +49,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { GoogleGenAI, Type } from "@google/genai";
-import { auth, db, loginWithGoogle } from './lib/firebase';
+import { auth, db, loginWithGoogle, loginWithEmail, registerWithEmail } from './lib/firebase';
 import { 
   doc, 
   getDoc, 
@@ -58,7 +63,8 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import type { UserProfile, MealPlan, ComplianceLog, NutritionInfo, Disease, HealthTip } from './types';
+import type { UserProfile, MealPlan, ComplianceLog, NutritionInfo, Disease, HealthTip, WeightEntry } from './types';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 // Utils
 enum OperationType {
@@ -92,6 +98,97 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
 }
 
 // Components
+const NutriCareSvgLogo = ({ className = "w-6 h-6", id }: { className?: string, id?: string }) => (
+  <svg 
+    id={id}
+    viewBox="0 0 120 120" 
+    className={className} 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      <linearGradient id="logo-green-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#15803d" />
+        <stop offset="50%" stopColor="#16a34a" />
+        <stop offset="100%" stopColor="#4ade80" />
+      </linearGradient>
+      <linearGradient id="logo-heart-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#14532d" />
+        <stop offset="50%" stopColor="#15803d" />
+        <stop offset="100%" stopColor="#22c55e" />
+      </linearGradient>
+    </defs>
+    
+    {/* 1. Main Heart Contour Left & Right */}
+    <path 
+      d="M 60,32 C 45,12 14,14 14,48 C 14,75 32,95 60,111 C 61.5,111.8 63,111.8 64.5,111 C 72,107 81,101 88,94" 
+      stroke="url(#logo-heart-gradient)" 
+      strokeWidth="8" 
+      strokeLinecap="round" 
+      fill="none" 
+    />
+    <path 
+      d="M 60,32 C 75,12 106,14 106,48 C 106,58 102,68 96,76" 
+      stroke="url(#logo-heart-gradient)" 
+      strokeWidth="8" 
+      strokeLinecap="round" 
+      fill="none" 
+    />
+
+    {/* 2. Cradling Hand Shape at Bottom Left to Right */}
+    <path 
+      d="M 38,91 C 45,99 53,101 62,101 C 78,101 92,95 98,88 C 101,84 97,81 92,83 C 83,87 74,89 65,89 C 53,89 44,84 38,76" 
+      stroke="url(#logo-green-gradient)" 
+      strokeWidth="6" 
+      strokeLinecap="round" 
+      fill="none" 
+    />
+
+    {/* 3. Blue Medical/Health Cross */}
+    <g fill="#3b82f6">
+      <rect x="76" y="20" width="7" height="18" rx="3" />
+      <rect x="70.5" y="25.5" width="18" height="7" rx="3" />
+    </g>
+
+    {/* 4. Abstract Healthy Human (raises hands) */}
+    <circle cx="46" cy="38" r="7.5" fill="url(#logo-green-gradient)" />
+    <path 
+      d="M 34,58 C 32,44 29,38 31,30 C 33,28 35,30 38,36 C 44,48 55,54 62,50 C 64,49 61,53 57,57 C 49,65 44,78 44,86 C 44,88 40,88 40,84 C 40,75 38,65 34,58 Z" 
+      fill="url(#logo-green-gradient)" 
+    />
+
+    {/* 5. Green Salad Bowl */}
+    <path 
+      d="M 57,69 C 66,73 84,73 95,69 C 95,80 86,89 76,89 C 66,89 57,80 57,69 Z" 
+      fill="#84cc16" 
+    />
+
+    {/* 6. Food elements inside the Bowl */}
+    <path 
+      d="M 68,69 C 61,61 58,54 62,48 C 65,45 69,47 71,51 C 72,46 76,45 78,49 C 80,53 79,61 74,69 Z" 
+      fill="#16a34a" 
+    />
+    <path 
+      d="M 74,68 C 76,68 79,64 81,60 C 84,54 89,45 87,44 C 85,43 80,52 77,57 C 75,61 73,65 74,68 Z" 
+      fill="#f97316" 
+    />
+    <path 
+      d="M 87,44 L 89,38 C 90,37 91,38 90,39 L 88,44 M 86,43 L 83,39 C 82,38 83,37 84,38 L 86,43" 
+      stroke="#16a34a" 
+      strokeWidth="1.5" 
+      strokeLinecap="round" 
+    />
+    <path 
+      d="M 85,68 C 82,68 81,65 81,61 C 81,55 85,52 89,52 C 93,52 97,55 97,61 C 97,65 95,68 91,68 C 89,68 87,67 85,68 Z" 
+      fill="#dc2626" 
+    />
+    <path 
+      d="M 89,52 C 89,48 91,46 93,48 C 93,50 91,52 89,52 Z" 
+      fill="#22c55e" 
+    />
+  </svg>
+);
+
 const LoadingScreen = () => (
   <div className="min-h-screen bg-green-50 flex flex-col items-center justify-center p-4">
     <motion.div
@@ -1848,6 +1945,319 @@ const AllArticlesModal = ({
   );
 };
 
+interface AuthModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  lang: 'vi' | 'en';
+}
+
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, lang }) => {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showIframeHelp] = useState(true);
+
+  if (!isOpen) return null;
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await loginWithGoogle();
+      onClose();
+    } catch (err: any) {
+      console.error(err);
+      const errMsg = lang === 'en' 
+        ? "Google Login blocked or cancelled. Tip: If you see a policy warning, please click 'Open inside a new tab' in AI Studio, use Email/Password login, or add your email as a Google Console Test User!"
+        : "Đăng nhập Google bị chặn hoặc bị hủy. Mẹo: Nếu bạn gặp lỗi chính sách của Google, hãy nhấp chọn 'Mở trong tab mới' trên thanh công cụ AI Studio, sử dụng Đăng nhập bằng Email/Mật khẩu bên dưới, hoặc thêm email của bạn vào danh sách Test Users Google Console!";
+      setError(errMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (!email || !password) {
+      setError(lang === 'en' ? 'Please fill in all fields.' : 'Vui lòng điền đầy đủ các trường.');
+      return;
+    }
+    if (isSignUp && !name) {
+      setError(lang === 'en' ? 'Please enter your name.' : 'Vui lòng nhập tên của bạn.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (isSignUp) {
+        await registerWithEmail(email, password, name);
+      } else {
+        await loginWithEmail(email, password);
+      }
+      onClose();
+    } catch (err: any) {
+      console.error(err);
+      let friendlyError = err.message;
+      if (err.code === 'auth/email-already-in-use') {
+        friendlyError = lang === 'en' ? 'This email is already in use.' : 'Email này đã được sử dụng.';
+      } else if (err.code === 'auth/invalid-email') {
+        friendlyError = lang === 'en' ? 'Invalid email address.' : 'Địa chỉ email không hợp lệ.';
+      } else if (err.code === 'auth/weak-password') {
+        friendlyError = lang === 'en' ? 'Password should be at least 6 characters.' : 'Mật khẩu phải có ít nhất 6 ký tự.';
+      } else if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+        friendlyError = lang === 'en' ? 'Email hoặc mật khẩu không chính xác.' : 'Email hoặc mật khẩu không chính xác.';
+      } else if (err.message && err.message.includes('auth/invalid-credential')) {
+        friendlyError = lang === 'en' ? 'Incorrect email or password.' : 'Email hoặc mật khẩu không chính xác.';
+      }
+      setError(friendlyError);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const solutions = {
+    vi: {
+      title: "CÁCH SỬA LỖI ĐĂNG NHẬP GOOGLE",
+      subtitle: "Giải pháp cho lỗi \"Yêu cầu không tuân thủ chính sách của Google\" do chế độ thử nghiệm (Testing/Sandbox) hoặc do chạy trong Iframe:",
+      tip1Title: "1. Mở xem trước trong Tab mới (Nhanh nhất ⭐)",
+      tip1Desc: "Google chặn popup đăng nhập bên trong khung iframe xem trước. Hãy nhấp vào nút \"Mở trong tab mới\" ở góc trên bên phải thanh công cụ live preview để đăng nhập bình thường.",
+      tip2Title: "2. Dùng Đăng nhập Email & Mật khẩu bên dưới",
+      tip2Desc: "Đăng ký hoặc Đăng nhập trực tiếp bằng form bên dưới (miễn phí). Giải pháp này giúp bạn bỏ qua các bước cấu hình Google OAuth phức tạp của nhà phát triển.",
+      tip3Title: "3. Thêm Test User vào Google Cloud Console",
+      tip3Desc: "Nếu cấu hình Firebase riêng, bạn hãy vào trang OAuth Consent Screen trong Google Cloud Console và thêm email hiện tại của bạn vào phần \"Test Users\" (Người dùng thử nghiệm).",
+      orText: "HOẶC SỬ DỤNG EMAIL",
+      googleBtn: "Đăng nhập nhanh với Google",
+      emailBtnSignin: "Đăng nhập",
+      emailBtnSignup: "Đăng ký tài khoản",
+      switchSignup: "Chưa có tài khoản? Đăng ký ngay",
+      switchSignin: "Đã có tài khoản? Đăng nhập",
+      namePlaceholder: "Họ và tên của bạn",
+      emailPlaceholder: "Địa chỉ email của bạn",
+      passwordPlaceholder: "Mật khẩu (ít nhất 6 ký tự)"
+    },
+    en: {
+      title: "HOW TO RECTIFY GOOGLE SIGN-IN BLOCKED",
+      subtitle: "Solutions for \"request does not comply with Google policies\" due to Sandbox/Testing or running inside an Iframe:",
+      tip1Title: "1. Open Preview in a New Tab (Easiest ⭐)",
+      tip1Desc: "Google blocks OAuth popups initiated inside iframe workspaces. Click the arrow/Open in tab button at the top right of the live preview panel to run top-level.",
+      tip2Title: "2. Use Email & Password below",
+      tip2Desc: "Create any account with any email/password inside the form below to mock login and start instantly without configuring OAuth.",
+      tip3Title: "3. Add a Test User in Google Console",
+      tip3Desc: "If running your own credential config, navigate to Google Cloud Console > OAuth Consent Screen, and add your test email in the \"Test Users\" section.",
+      orText: "OR USE EMAIL Fallback",
+      googleBtn: "Sign in with Google",
+      emailBtnSignin: "Sign In",
+      emailBtnSignup: "Create Account",
+      switchSignup: "Don't have an account? Sign Up",
+      switchSignin: "Already have an account? Sign In",
+      namePlaceholder: "Your full name",
+      emailPlaceholder: "Your email address",
+      passwordPlaceholder: "Password (Min 6 characters)"
+    }
+  };
+
+  const t = solutions[lang] || solutions.vi;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center p-4 z-[999] overflow-y-auto">
+      {/* Background overlay */}
+      <div 
+        onClick={onClose} 
+        className="fixed inset-0 bg-slate-900/60 backdrop-blur-md transition-opacity" 
+      />
+
+      {/* Modal element */}
+      <div className="relative bg-white rounded-[2.5rem] shadow-2xl border border-slate-100 max-w-lg w-full p-6 md:p-8 z-10 my-8 space-y-6">
+        <button 
+          onClick={onClose}
+          className="absolute top-6 right-6 p-2 rounded-full hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600 focus:outline-none"
+        >
+          <X size={20} />
+        </button>
+
+        {/* Modal Header */}
+        <div className="text-center space-y-2">
+          <div className="inline-flex w-12 h-12 bg-emerald-50 rounded-2xl items-center justify-center text-emerald-600 mb-2">
+            <ShieldAlert size={24} />
+          </div>
+          <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+            {isSignUp ? t.emailBtnSignup : t.emailBtnSignin}
+          </h3>
+          <p className="text-xs text-slate-500 font-medium max-w-sm mx-auto">
+            {lang === 'en' 
+              ? 'Explore fully your health AI assistant and personalize your recipes.' 
+              : 'Trải nghiệm trợ lý sức khỏe thông minh và lập thực đơn cá nhân hóa trọn vẹn.'}
+          </p>
+        </div>
+
+        {/* Help Banner for Google policies */}
+        {showIframeHelp && (
+          <div className="bg-amber-50/70 border border-amber-200 rounded-3xl p-5 space-y-3.5 text-left text-xs text-amber-900 relative">
+            <div className="flex items-start gap-2.5">
+              <AlertTriangle className="text-amber-600 shrink-0 mt-0.5" size={16} />
+              <div>
+                <p className="font-bold text-amber-950 text-sm leading-tight uppercase tracking-wide">{t.title}</p>
+                <p className="text-amber-800 font-medium mt-1 leading-snug">{t.subtitle}</p>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2.5 border-t border-amber-200/50">
+              <div className="space-y-0.5">
+                <p className="font-bold text-amber-950 flex items-center gap-1.5">
+                  {t.tip1Title}
+                </p>
+                <p className="text-amber-800 leading-relaxed pl-1">{t.tip1Desc}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="font-bold text-amber-950 flex items-center gap-1.5">
+                  {t.tip2Title}
+                </p>
+                <p className="text-amber-800 leading-relaxed pl-1">{t.tip2Desc}</p>
+              </div>
+              <div className="space-y-0.5">
+                <p className="font-bold text-slate-700 flex items-center gap-1.5">
+                  {t.tip3Title}
+                </p>
+                <p className="text-slate-500 leading-relaxed pl-1">{t.tip3Desc}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Buttons and Forms */}
+        <div className="space-y-4">
+          {/* Sign in with Google */}
+          <button
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-slate-700 hover:bg-slate-100 transition-all text-sm active:scale-98 disabled:opacity-50 disabled:pointer-events-none"
+          >
+            <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
+              <path
+                fill="#4285F4"
+                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+              />
+              <path
+                fill="#34A853"
+                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+              />
+              <path
+                fill="#EA4335"
+                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+              />
+            </svg>
+            <span>{t.googleBtn}</span>
+            {loading && <Loader2 className="animate-spin text-slate-400 shrink-0" size={16} />}
+          </button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 border-t border-slate-100" />
+            <span className="text-[10px] text-slate-400 font-bold tracking-widest uppercase">{t.orText}</span>
+            <div className="flex-1 border-t border-slate-100" />
+          </div>
+
+          {/* Email Form */}
+          <form onSubmit={handleSubmit} className="space-y-3 text-left">
+            {error && (
+              <div className="p-4 bg-rose-50 text-rose-700 text-xs font-semibold rounded-2xl flex items-start gap-2 border border-rose-100">
+                <AlertCircle className="shrink-0 mt-0.5" size={16} />
+                <span className="leading-snug">{error}</span>
+              </div>
+            )}
+
+            {isSignUp && (
+              <div className="space-y-1">
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">
+                    <UserIcon size={18} />
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    placeholder={t.namePlaceholder}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-500 focus:bg-white text-slate-900 transition-all font-medium"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-1">
+              <div className="relative">
+                <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">
+                  <Mail size={18} />
+                </span>
+                <input
+                  type="email"
+                  required
+                  placeholder={t.emailPlaceholder}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-500 focus:bg-white text-slate-900 transition-all font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="relative">
+                <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">
+                  <Lock size={18} />
+                </span>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder={t.passwordPlaceholder}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:border-emerald-500 focus:bg-white text-slate-900 transition-all font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-sm shadow-xl shadow-emerald-100 transition-all active:scale-98 flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <span>{isSignUp ? t.emailBtnSignup : t.emailBtnSignin}</span>
+              {loading ? (
+                <Loader2 className="animate-spin text-white shrink-0" size={16} />
+              ) : (
+                <ChevronRight size={18} />
+              )}
+            </button>
+          </form>
+
+          {/* Toggle Tab link */}
+          <div className="text-center pt-2">
+            <button
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError('');
+              }}
+              className="text-xs font-black text-emerald-600 hover:text-emerald-700 hover:underline transition-colors focus:outline-none"
+            >
+              {isSignUp ? t.switchSignin : t.switchSignup}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [lang, setLang] = useState<'vi' | 'en'>(() => {
@@ -1882,6 +2292,7 @@ export default function App() {
   const [loadingTips, setLoadingTips] = useState(false);
   const [viewingAllArticles, setViewingAllArticles] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<any | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
@@ -2016,12 +2427,8 @@ export default function App() {
     });
   };
 
-  const handleLogin = async () => {
-    try {
-      await loginWithGoogle();
-    } catch (error) {
-      alert("Đăng nhập thất bại. Vui lòng thử lại.");
-    }
+  const handleLogin = () => {
+    setShowAuthModal(true);
   };
 
   const handleOnboardingSubmit = async (data: Partial<UserProfile>) => {
@@ -2041,11 +2448,13 @@ export default function App() {
       allergies: data.allergies || [],
       habits: data.habits || '',
       activityLevel: data.activityLevel || 'moderate',
-      subscriptionTier: 'free',
-      planEndDate: sevenDaysLater.toISOString(),
-      likedIngredients: data.likedIngredients || [],
-      dislikedIngredients: data.dislikedIngredients || [],
-      createdAt: now.toISOString()
+      subscriptionTier: profile?.subscriptionTier || 'free',
+      planEndDate: profile?.planEndDate || sevenDaysLater.toISOString(),
+      role: profile?.role || 'user',
+      likedIngredients: data.likedIngredients || profile?.likedIngredients || [],
+      dislikedIngredients: data.dislikedIngredients || profile?.dislikedIngredients || [],
+      weightHistory: data.weightHistory || profile?.weightHistory || [],
+      createdAt: profile?.createdAt || now.toISOString()
     };
 
     try {
@@ -2392,8 +2801,8 @@ export default function App() {
         {/* Navigation */}
         <nav className="max-w-[1024px] mx-auto px-6 py-6 flex flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 mr-auto">
-            <div className="bg-emerald-600 p-2 rounded-xl text-white">
-              <Leaf size={24} />
+            <div className="bg-white p-1 rounded-xl border border-slate-100 shadow-sm w-10 h-10 flex items-center justify-center">
+              <NutriCareSvgLogo className="w-full h-full" />
             </div>
             <span className="font-black text-2xl tracking-tight text-slate-900">{activeText.navBrand}</span>
           </div>
@@ -2870,6 +3279,12 @@ export default function App() {
           selectedArticle={selectedArticle} 
           setSelectedArticle={setSelectedArticle} 
         />
+
+        <AuthModal 
+          isOpen={showAuthModal} 
+          onClose={() => setShowAuthModal(false)} 
+          lang={lang} 
+        />
       </div>
     );
   }
@@ -2883,12 +3298,12 @@ export default function App() {
       {/* Header */}
       <header className="max-w-[1024px] w-full mx-auto mt-6 flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm z-30">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('dashboard')}>
-          <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white">
-            <Leaf size={24} strokeWidth={2.5} />
+          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-inner">
+            <NutriCareSvgLogo className="w-full h-full" id="nutricare-header-logo" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-emerald-900 leading-tight">NutriCare</h1>
-            <p className="text-[10px] font-bold text-emerald-600 tracking-wider uppercase">Trợ lý dinh dưỡng thông minh</p>
+            <h1 className="text-2xl font-black text-slate-900 leading-tight flex items-center gap-1">NutriCare</h1>
+            <p className="text-[10px] font-black text-emerald-600 tracking-wider uppercase">Trợ lý dinh dưỡng thông minh</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
@@ -4355,12 +4770,112 @@ function PricingView({ currentTier, onBack, onSelect, loading }: { currentTier: 
 }
 function ProfileScreen({ profile, onBack, onUpdate, onUpgrade, onAdmin }: { profile: UserProfile | null, onBack: () => void, onUpdate: (d: Partial<UserProfile>) => void, onUpgrade: () => void, onAdmin: () => void }) {
   const [formData, setFormData] = useState<Partial<UserProfile>>(profile || {});
+  const [chartTab, setChartTab] = useState<'both' | 'weight' | 'bmi'>('both');
+  const [newWeight, setNewWeight] = useState<string>('');
+  const [newDate, setNewDate] = useState<string>(new Date().toISOString().split('T')[0]);
   
   const handleOpenChat = () => {
     window.dispatchEvent(new CustomEvent('openNutriChat'));
   };
 
   if (!profile) return null;
+
+  // Derived helper to format date for display on X-Axis and compute default history if empty
+  const historyData = useMemo(() => {
+    let hist = formData.weightHistory || [];
+    if (hist.length === 0) {
+      // Seed default historical data leading up to current weight
+      const heightInMeters = formData.height ? (formData.height / 100) : 1.70;
+      const currentWeight = formData.weight || 60;
+      const today = new Date();
+      const offsets = [
+        { daysAgo: 28, weightDiff: -2.1 },
+        { daysAgo: 21, weightDiff: -1.4 },
+        { daysAgo: 14, weightDiff: -0.8 },
+        { daysAgo: 7, weightDiff: -0.3 },
+        { daysAgo: 0, weightDiff: 0 }
+      ];
+      hist = offsets.map(offset => {
+        const d = new Date(today);
+        d.setDate(today.getDate() - offset.daysAgo);
+        const dateStr = d.toISOString().split('T')[0];
+        const w = Number((currentWeight + offset.weightDiff).toFixed(1));
+        const bmi = Number((w / (heightInMeters * heightInMeters)).toFixed(1));
+        return { date: dateStr, weight: w, bmi };
+      });
+    }
+    
+    // Sort chronologically by date
+    return [...hist].sort((a, b) => a.date.localeCompare(b.date));
+  }, [formData.weightHistory, formData.weight, formData.height]);
+
+  const currentBMI = useMemo(() => {
+    const w = formData.weight || 60;
+    const h = formData.height || 170;
+    const bmi = w / ((h / 100) * (h / 100));
+    return Number(bmi.toFixed(1));
+  }, [formData.weight, formData.height]);
+
+  const getBmiCategory = (bmiVal: number) => {
+    if (bmiVal < 18.5) return { label: 'Thiếu cân (Gầy)', color: 'text-blue-500 bg-blue-50 border-blue-100', desc: 'Có nguy cơ suy dinh dưỡng, hãy ưu tiên các nhóm chất béo lành mạnh.' };
+    if (bmiVal < 23) return { label: 'Bình thường (Lý tưởng)', color: 'text-emerald-600 bg-emerald-50 border-emerald-100', desc: 'Tuyệt vời! Hãy tiếp tục duy trì chế độ sinh hoạt lành mạnh hiện tại.' };
+    if (bmiVal < 25) return { label: 'Thừa cân (Tiền béo phì)', color: 'text-amber-600 bg-amber-50 border-amber-100', desc: 'Hãy chú ý cắt bớt tinh bột và bổ sung nhiều rau xanh hơn.' };
+    return { label: 'Béo phì', color: 'text-rose-600 bg-rose-50 border-rose-100', desc: 'Khuyên dùng chế độ ăn nhạt, tránh muối đường dầu mỡ.' };
+  };
+
+  const bmiStatus = getBmiCategory(currentBMI);
+
+  const handleAddMeasurement = () => {
+    const w = Number(newWeight);
+    if (isNaN(w) || w <= 0 || w > 300) {
+      alert("Vui lòng nhập cân nặng hợp lệ (0kg - 300kg)!");
+      return;
+    }
+    
+    const heightInMeters = (formData.height || 170) / 100;
+    const bmi = Number((w / (heightInMeters * heightInMeters)).toFixed(1));
+    
+    const newEntry: WeightEntry = {
+      date: newDate,
+      weight: w,
+      bmi
+    };
+    
+    const existingHist = formData.weightHistory && formData.weightHistory.length > 0 ? formData.weightHistory : historyData;
+    const filteredHist = existingHist.filter(entry => entry.date !== newDate);
+    const updatedHist = [...filteredHist, newEntry].sort((a, b) => a.date.localeCompare(b.date));
+    
+    const updatedForm = {
+      ...formData,
+      weight: w,
+      weightHistory: updatedHist
+    };
+    
+    setFormData(updatedForm);
+    setNewWeight('');
+    
+    // Save to server
+    onUpdate(updatedForm);
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl text-white text-xs space-y-1">
+          <p className="font-extrabold text-slate-300">
+            {new Date(label).toLocaleDateString('vi-VN', { year: 'numeric', month: 'short', day: 'numeric' })}
+          </p>
+          {payload.map((item: any, idx: number) => (
+            <p key={idx} className="font-bold flex items-center gap-1.5" style={{ color: item.color }}>
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }} />
+              {item.name}: {item.value} {item.name === 'Cân nặng' ? 'kg' : ''}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <motion.div 
@@ -4377,6 +4892,7 @@ function ProfileScreen({ profile, onBack, onUpdate, onUpgrade, onAdmin }: { prof
       </div>
 
       <div className="col-span-12 lg:col-span-8 space-y-6">
+        {/* Profile Details Edit Form */}
         <div className="geometric-card p-8 space-y-8">
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 border border-emerald-100">
@@ -4424,7 +4940,10 @@ function ProfileScreen({ profile, onBack, onUpdate, onUpgrade, onAdmin }: { prof
               <input 
                 type="number" 
                 value={formData.weight} 
-                onChange={e => setFormData({...formData, weight: Number(e.target.value)})}
+                onChange={e => {
+                  const val = Number(e.target.value);
+                  setFormData({...formData, weight: val});
+                }}
                 className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-medium focus:bg-white focus:border-emerald-500 outline-none transition-all"
               />
             </div>
@@ -4449,10 +4968,191 @@ function ProfileScreen({ profile, onBack, onUpdate, onUpgrade, onAdmin }: { prof
 
           <button 
             onClick={() => onUpdate(formData)}
-            className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-100 active:scale-[0.98] transition-all hover:bg-emerald-700 font-bold uppercase tracking-wider text-sm mt-4"
+            className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-100 active:scale-[0.98] transition-all hover:bg-emerald-700 font-bold uppercase tracking-wider text-sm mt-4 flex items-center justify-center gap-2"
           >
-            Lưu thay đổi hồ sơ
+             Lưu thay đổi hồ sơ
           </button>
+        </div>
+
+        {/* Dynamic Weight and BMI Tracking & Visualization Section */}
+        <div className="geometric-card p-8 space-y-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-100 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                <TrendingUp size={20} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight font-sans">Tiến trình chỉ số cơ thể</h3>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Weight & BMI History</p>
+              </div>
+            </div>
+
+            {/* Segmented Controller Tab */}
+            <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full md:w-auto overflow-x-auto shrink-0 border border-slate-200/50">
+              {[
+                { id: 'both', label: 'Cả hai' },
+                { id: 'weight', label: 'Cân nặng' },
+                { id: 'bmi', label: 'Chỉ số BMI' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setChartTab(tab.id as any)}
+                  className={`px-4 py-2 rounded-xl text-xs font-black shrink-0 transition-all ${
+                    chartTab === tab.id ? 'bg-white text-slate-950 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Quick Metrics & BMI Health Meter */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-slate-50 border border-slate-200/60 p-5 rounded-2xl flex flex-col justify-between">
+              <div>
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Cân nặng hiện tại</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-slate-950">{formData.weight || 60}</span>
+                  <span className="text-sm font-bold text-slate-500">kg</span>
+                </div>
+              </div>
+              <p className="text-xs text-slate-400 font-bold mt-4 flex items-center gap-1">
+                <Scale size={14} className="text-emerald-500" /> Chiều cao cài đặt: {formData.height || 170} cm
+              </p>
+            </div>
+
+            <div className={`p-5 rounded-2xl border ${bmiStatus.color} flex flex-col justify-between`}>
+              <div>
+                <p className="text-[10px] font-black opacity-60 uppercase tracking-widest mb-1.5">Chỉ số BMI hiện tại</p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black">{currentBMI}</span>
+                  <span className="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/85 shadow-sm">{bmiStatus.label}</span>
+                </div>
+              </div>
+              <p className="text-xs font-bold leading-relaxed opacity-85 mt-4">{bmiStatus.desc}</p>
+            </div>
+          </div>
+
+          {/* Visualization Chart Container */}
+          <div className="h-[300px] w-full md:h-[350px] relative mt-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={historyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorBmi" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(v) => {
+                    const parts = v.split('-');
+                    return parts.length === 3 ? `${parts[2]}/${parts[1]}` : v;
+                  }}
+                  stroke="#94a3b8" 
+                  style={{ fontSize: '11px', fontWeight: 600 }} 
+                />
+                
+                {chartTab === 'both' && (
+                  <>
+                    <YAxis 
+                      yAxisId="left" 
+                      stroke="#10b981" 
+                      domain={['dataMin - 3', 'dataMax + 3']} 
+                      style={{ fontSize: '11px', fontWeight: 600 }} 
+                    />
+                    <YAxis 
+                      yAxisId="right" 
+                      orientation="right" 
+                      stroke="#3b82f6" 
+                      domain={['dataMin - 1', 'dataMax + 1']} 
+                      style={{ fontSize: '11px', fontWeight: 600 }} 
+                    />
+                  </>
+                )}
+
+                {chartTab === 'weight' && (
+                  <YAxis 
+                    stroke="#10b981" 
+                    domain={['dataMin - 4', 'dataMax + 4']} 
+                    style={{ fontSize: '11px', fontWeight: 600 }} 
+                  />
+                )}
+
+                {chartTab === 'bmi' && (
+                  <YAxis 
+                    stroke="#3b82f6" 
+                    domain={['dataMin - 1.5', 'dataMax + 1.5']} 
+                    style={{ fontSize: '11px', fontWeight: 600 }} 
+                  />
+                )}
+
+                <Tooltip content={<CustomTooltip />} />
+                
+                {chartTab === 'both' && (
+                  <>
+                    <Area yAxisId="left" type="monotone" dataKey="weight" name="Cân nặng" stroke="#10b981" strokeWidth={3} fill="url(#colorWeight)" />
+                    <Area yAxisId="right" type="monotone" dataKey="bmi" name="Chỉ số BMI" stroke="#3b82f6" strokeWidth={3} fill="url(#colorBmi)" />
+                  </>
+                )}
+
+                {chartTab === 'weight' && (
+                  <Area type="monotone" dataKey="weight" name="Cân nặng" stroke="#10b981" strokeWidth={3} fill="url(#colorWeight)" />
+                )}
+
+                {chartTab === 'bmi' && (
+                  <Area type="monotone" dataKey="bmi" name="Chỉ số BMI" stroke="#3b82f6" strokeWidth={3} fill="url(#colorBmi)" />
+                )}
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Add Measurement Entry Form */}
+          <div className="bg-slate-50 border border-slate-200/70 p-6 rounded-3xl mt-4">
+            <h4 className="text-sm font-black text-slate-800 tracking-tight flex items-center gap-2 mb-4">
+              <Plus size={16} className="text-emerald-500" /> Thêm số đo mới
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Chọn ngày đo</label>
+                <input 
+                  type="date" 
+                  value={newDate} 
+                  max={new Date().toISOString().split('T')[0]}
+                  onChange={e => setNewDate(e.target.value)}
+                  className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl p-3 text-sm font-medium outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Cân nặng thực tế (kg)</label>
+                <div className="relative">
+                  <input 
+                    type="number" 
+                    placeholder="VD: 58"
+                    value={newWeight} 
+                    onChange={e => setNewWeight(e.target.value)}
+                    className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-xl p-3 text-sm font-medium outline-none transition-all pr-12"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">KG</span>
+                </div>
+              </div>
+
+              <button 
+                onClick={handleAddMeasurement}
+                disabled={!newWeight}
+                className="w-full bg-slate-900 border border-slate-950 hover:bg-slate-850 text-white font-bold py-3.5 rounded-xl transition-all font-bold text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Ghi chép số đo
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
