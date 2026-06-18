@@ -45,9 +45,11 @@ import {
   Scale,
   Coffee,
   TrendingUp,
-  Stethoscope as DoctorIcon
+  Stethoscope as DoctorIcon,
+  FileDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { jsPDF } from 'jspdf';
 import { GoogleGenAI, Type } from "@google/genai";
 import { auth, db, loginWithGoogle, loginWithEmail, registerWithEmail } from './lib/firebase';
 import { 
@@ -2294,6 +2296,303 @@ export default function App() {
   const [selectedArticle, setSelectedArticle] = useState<any | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
+  const get7DayTrendData = () => {
+    const data = [];
+    const today = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(today.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      
+      const dayLogs = logs.filter(l => l.date === dateStr);
+      const followedCount = dayLogs.filter(l => l.status === 'followed').length;
+      const compliancePercent = Math.min(100, followedCount * 25);
+      
+      const weekdayName = d.toLocaleDateString('vi-VN', { weekday: 'short' });
+      const dateFormatted = d.toLocaleDateString('vi-VN', { day: 'numeric', month: 'numeric' });
+      
+      data.push({
+        dateStr,
+        dayLabel: `${weekdayName} ${dateFormatted}`,
+        compliance: compliancePercent,
+      });
+    }
+    return data;
+  };
+
+  const calculateStreak = (trendDays: any[]) => {
+    let streak = 0;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const sorted = [...trendDays].reverse();
+    
+    for (let i = 0; i < sorted.length; i++) {
+      const day = sorted[i];
+      const followedCount = logs.filter(l => l.date === day.dateStr && l.status === 'followed').length;
+      if (followedCount > 0) {
+        streak++;
+      } else {
+        if (day.dateStr === todayStr) {
+          continue; 
+        }
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const exportWeeklyReportPDF = () => {
+    if (!profile) return;
+    
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const removeAccents = (str: string): string => {
+      if (!str) return '';
+      return str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'D');
+    };
+
+    // 1. Branding Header Bar
+    doc.setFillColor(5, 150, 105); 
+    doc.rect(15, 15, 180, 26, 'F');
+
+    // Title text inside banner
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('NUTRICARE - BAO CAO TUAN THU SUC KHOE & DINH DUONG', 20, 24);
+    
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Bao cao suc khoe de chia se voi bac si - Phien ban thu nghiem CLINICAL BETA', 20, 31);
+    
+    const todayStr = new Date().toLocaleDateString('vi', { year: 'numeric', month: 'numeric', day: 'numeric' });
+    doc.text(`Xuat ngay: ${todayStr}`, 155, 24);
+
+    // 2. Patient Demographics & Profile
+    doc.setTextColor(30, 41, 59); 
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('THONG TIN NGUOI DUNG (PATIENT PROFILE)', 15, 52);
+
+    // Draw horizontal line below title
+    doc.setDrawColor(226, 232, 240); 
+    doc.setLineWidth(0.4);
+    doc.line(15, 54, 195, 54);
+
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(9);
+    
+    const nameLine = `Ho va ten: ${removeAccents(profile.name)}`;
+    const ageLine = `Tuoi: ${profile.age}`;
+    const genderLine = `Gioi tinh: ${profile.gender === 'male' ? 'Nam' : profile.gender === 'female' ? 'Nu' : 'Khac'}`;
+    const physicalLine = `Chieu cao: ${profile.height} cm  |  Can nang: ${profile.weight} kg  |  BMI: ${(profile.weight / ((profile.height / 100) ** 2)).toFixed(1)}`;
+    
+    doc.text(nameLine, 15, 60);
+    doc.text(ageLine, 85, 60);
+    doc.text(genderLine, 135, 60);
+    doc.text(physicalLine, 15, 66);
+
+    const diseasesStr = profile.diseases && profile.diseases.length > 0 ? profile.diseases.join(', ') : 'Khong ghi nhan';
+    const allergiesStr = profile.allergies && profile.allergies.length > 0 ? profile.allergies.join(', ') : 'Khong co';
+    
+    const conditionsText = `Benh ly dang theo doi: ${removeAccents(diseasesStr)}`;
+    const allergiesText = `Di ung thuc pham: ${removeAccents(allergiesStr)}`;
+    const habitsText = `Thoi quen hoat dong: ${profile.activityLevel === 'low' ? 'It van dong' : profile.activityLevel === 'moderate' ? 'Moderate (Binh thuong)' : 'High (Nhieu)'}`;
+
+    doc.text(conditionsText, 15, 72);
+    doc.text(allergiesText, 15, 78);
+    doc.text(habitsText, 15, 84);
+
+    // 3. 7-Day Compliance Summary Metrics
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('KET QUA TUAN THU DINH DUONG (COMPLIANCE OUTCOMES)', 15, 96);
+    doc.line(15, 98, 195, 98);
+
+    const trendDays = get7DayTrendData();
+    const avgCompliance = Math.round(trendDays.reduce((acc, item) => acc + item.compliance, 0) / 7);
+    const activeStreak = calculateStreak(trendDays);
+
+    // Background blocks for metrics
+    doc.setFillColor(248, 250, 252); 
+    doc.rect(15, 102, 85, 18, 'F');
+    doc.setFillColor(236, 253, 245); 
+    doc.rect(110, 102, 85, 18, 'F');
+
+    // Stats Labels & Values
+    doc.setTextColor(71, 85, 105); 
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('TI LE TUAN THU TRUNG BINH tuần', 20, 108);
+    doc.text('CHUOI NGAY TUAN THU LIEN TIEP', 115, 108);
+
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(15, 118, 110); 
+    doc.text(`${avgCompliance}%`, 20, 115);
+    doc.setTextColor(4, 120, 87); 
+    doc.text(`${activeStreak} Ngay`, 115, 115);
+
+    // Evaluation text
+    doc.setTextColor(30, 41, 59); 
+    doc.setFont('Helvetica', 'italic');
+    doc.setFontSize(8);
+    let evaluationDesc = "Danh gia khoi dau: Hay cham chi theo doi cac bua an de thong so thuc don cua ban duoc chinh xac.";
+    if (avgCompliance >= 80) {
+      evaluationDesc = "Danh gia khoa hoc: XUAT SAC! Qua trinh tuan thu cuc tot, rat tot cho muc tieu giam tai huyet ap/tieu duong.";
+    } else if (avgCompliance >= 50) {
+      evaluationDesc = "Danh gia khoa hoc: KHA TOT! Hoan thanh kha day du thuc don y khoa, giup on dinh the chat dai han.";
+    } else if (avgCompliance > 0) {
+      evaluationDesc = "Danh gia khoa hoc: CAN CO GANG! Hay kiem soat ky calo va han che nap cac cac chat phu gia qua tieu chuan.";
+    }
+    doc.text(evaluationDesc, 15, 125);
+
+    // 4. Logged Activities Checklist Table
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('NHAT KY LOG BUA AN TRONG 7 NGÀY QUA (7-DAY DIETARY MATRIX)', 15, 135);
+    doc.line(15, 137, 195, 137);
+
+    // Table Header
+    doc.setFillColor(241, 245, 249); 
+    doc.rect(15, 140, 180, 8, 'F');
+    
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(51, 65, 85); 
+    doc.text('Thoi Gian', 18, 145.5);
+    doc.text('Bua Sang', 55, 145.5);
+    doc.text('Bua Trua', 90, 145.5);
+    doc.text('Bua Toi', 125, 145.5);
+    doc.text('Bua Phu', 160, 145.5);
+
+    // Table Content
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(8);
+    
+    let tableY = 148;
+    trendDays.forEach((day, index) => {
+      if (index % 2 === 1) {
+        doc.setFillColor(248, 250, 252); 
+        doc.rect(15, tableY, 180, 7, 'F');
+      }
+      
+      const dayLogs = logs.filter(l => l.date === day.dateStr);
+      
+      const getMealStatus = (mType: 'breakfast' | 'lunch' | 'dinner' | 'snacks') => {
+        const found = dayLogs.find(l => l.mealType === mType);
+        if (!found) return 'Chua ghi';
+        if (found.status === 'followed') return 'Tuan thu';
+        if (found.status === 'modified') return 'Thay doi';
+        return 'Bo qua';
+      };
+      
+      const displayDay = removeAccents(day.dayLabel);
+      
+      doc.setTextColor(30, 41, 59);
+      doc.text(displayDay, 18, tableY + 5);
+      
+      const statusB = getMealStatus('breakfast');
+      const statusL = getMealStatus('lunch');
+      const statusD = getMealStatus('dinner');
+      const statusS = getMealStatus('snacks');
+      
+      doc.text(statusB, 55, tableY + 5);
+      doc.text(statusL, 90, tableY + 5);
+      doc.text(statusD, 125, tableY + 5);
+      doc.text(statusS, 160, tableY + 5);
+      
+      tableY += 7;
+    });
+
+    // 5. Active Meal Plan Recommendations
+    if (mealPlan) {
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.setTextColor(30, 41, 59);
+      doc.text('QUY TAC DINH DUONG THEO THE TRANG (NUTRITIONAL ADVISORY)', 15, tableY + 12);
+      doc.line(15, tableY + 14, 195, tableY + 14);
+
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('NHOM THUC PHAM KHUYEN DUNG (SHOULD EAT):', 15, tableY + 19);
+      doc.setFont('Helvetica', 'normal');
+      
+      const eatItems = mealPlan.shouldEat && mealPlan.shouldEat.length > 0 
+        ? mealPlan.shouldEat.join(', ') 
+        : 'Cac nguoi thuc pham tuoi ngon, thanh dam giau chat xo tu nhien';
+      
+      const eatWrapped = doc.splitTextToSize(removeAccents(eatItems), 180);
+      doc.text(eatWrapped, 15, tableY + 23);
+      
+      const wrapHeightEat = eatWrapped.length * 4.5;
+
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('THUC PHAM HAN CHE VA TRANH (SHOULD AVOID):', 15, tableY + 25 + wrapHeightEat);
+      doc.setFont('Helvetica', 'normal');
+      
+      const avoidItems = mealPlan.shouldAvoid && mealPlan.shouldAvoid.length > 0 
+        ? mealPlan.shouldAvoid.join(', ') 
+        : 'Do an giau chat beo bao hoa, sodium vuot muc cho phep';
+        
+      const avoidWrapped = doc.splitTextToSize(removeAccents(avoidItems), 180);
+      doc.text(avoidWrapped, 15, tableY + 29 + wrapHeightEat);
+      
+      const wrapHeightAvoid = avoidWrapped.length * 4.5;
+
+      // Doctor note block
+      const noteY = tableY + 33 + wrapHeightEat + wrapHeightAvoid;
+      doc.setFillColor(254, 251, 240); 
+      doc.rect(15, noteY, 180, 16, 'F');
+      doc.setDrawColor(253, 230, 138); 
+      doc.rect(15, noteY, 180, 16);
+
+      doc.setTextColor(146, 64, 14); 
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('KHUYEN CAO Y TE QUAN TRONG (CLINICAL DISCLAIMER):', 18, noteY + 5);
+      
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(7);
+      const disclaimerText = 'NutriCare cung cap cac thuc don va chi so calo du kien phu hop cac benh nen ho tro toi uu tu do. Hay chia se ngay file PDF bao cao lam sang nay cho Bac si chuyen khoa khem benh cua ban de phoi hop chan doan, dieu chinh khau phan lam sang an toan va thuc te dung nghia tung giai doan.';
+      doc.text(doc.splitTextToSize(disclaimerText, 174), 18, noteY + 9);
+    } else {
+      const noteY = tableY + 12;
+      doc.setFillColor(254, 251, 240); 
+      doc.rect(15, noteY, 180, 16, 'F');
+      doc.setDrawColor(253, 230, 138);
+      doc.rect(15, noteY, 180, 16);
+
+      doc.setTextColor(146, 64, 14);
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('KHUYEN CAO Y TE QUAN TRONG (CLINICAL DISCLAIMER):', 18, noteY + 5);
+      
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(7);
+      const disclaimerText = 'NutriCare thiet ke bieu do y khoa cho muc dich phan tich hanh vi an uong y khoa ho tro benh ly nen. Cac thong tin khong thay the cho chan doan phau thuat, duyet y khoa chuyen nghiep. Vui long dua bao cao nay cho Bac si de phan tich chinh xac.';
+      doc.text(doc.splitTextToSize(disclaimerText, 174), 18, noteY + 9);
+    }
+
+    // 6. Footer signature
+    doc.setTextColor(148, 163, 184); 
+    doc.setFont('Helvetica', 'italic');
+    doc.setFontSize(7);
+    doc.text('Cam on ban da tin dung he thong NutriCare Health AI Companion.', 15, 282);
+    doc.text('Bao cao tuong thich cho cac thiet bi y te va ghi chep lam sang.', 130, 282);
+
+    doc.save(`NutriCare_Bao_Cao_Suc_Khoe_${profile.name.replace(/\s+/g, '_')}.pdf`);
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
       setUser(authUser);
@@ -2798,6 +3097,29 @@ export default function App() {
     const realTimeMeal = getRealTimeMealData(lang);
     return (
       <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
+        {/* Banner Phiên bản Thử nghiệm (Beta Version) */}
+        <div className="bg-slate-900 text-white border-b border-white/5 py-3 px-6 text-center text-xs font-medium tracking-tight">
+          <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="bg-amber-500/25 border border-amber-500/30 text-amber-400 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md">
+                BETA v0.9.5
+              </span>
+              <span className="hidden sm:inline text-slate-400 font-bold">|</span>
+              <p className="text-slate-200">
+                {lang === 'vi' 
+                  ? 'Ứng dụng đang trong giai đoạn thử nghiệm lâm sàng. Vui lòng phản hồi góp ý tại phần trò chuyện.'
+                  : 'Application is under clinical test phase. Please provide feedback in the active chat workspace.'}
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-[10px] uppercase font-black tracking-wider text-slate-400">
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000"></span>
+                {lang === 'vi' ? 'Hệ thống trực tuyến' : 'ONLINE'}
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Navigation */}
         <nav className="max-w-[1024px] mx-auto px-6 py-6 flex flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 mr-auto">
@@ -3295,6 +3617,29 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans text-slate-800">
+      {/* Banner Phiên bản Thử nghiệm (Beta Version) */}
+      <div className="bg-slate-900 text-white border-b border-white/5 py-3 px-6 text-center text-xs font-medium tracking-tight">
+        <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="bg-amber-500/25 border border-amber-500/30 text-amber-400 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-md">
+              BETA v0.9.5
+            </span>
+            <span className="hidden sm:inline text-slate-400 font-bold">|</span>
+            <p className="text-slate-200">
+              {lang === 'vi' 
+                ? 'Ứng dụng đang trong giai đoạn thử nghiệm lâm sàng. Vui lòng phản hồi góp ý tại phần trò chuyện.'
+                : 'Application is under clinical test phase. Please provide feedback in the active chat workspace.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-3 text-[10px] uppercase font-black tracking-wider text-slate-400">
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000"></span>
+              {lang === 'vi' ? 'Hệ thống trực tuyến' : 'ONLINE'}
+            </span>
+          </div>
+        </div>
+      </div>
+
       {/* Header */}
       <header className="max-w-[1024px] w-full mx-auto mt-6 flex items-center justify-between bg-white border border-slate-200 rounded-2xl p-4 shadow-sm z-30">
         <div className="flex items-center gap-3 cursor-pointer" onClick={() => setView('dashboard')}>
@@ -3438,6 +3783,148 @@ export default function App() {
               {/* Main Content: Meal Plan */}
               <main className="col-span-12 lg:col-span-9 flex flex-col gap-6">
                 <DaySelector selectedDate={selectedDate} onSelect={setSelectedDate} />
+
+                {/* Health Overview & Compliance Trend Card */}
+                <section className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div>
+                      <h3 className="text-base font-black text-slate-800 flex items-center gap-2">
+                        <Activity size={18} className="text-emerald-500" />
+                        Tóm tắt Sức khỏe & Tuân thủ
+                      </h3>
+                      <p className="text-xs text-slate-500 font-medium">Theo dõi mức độ hoàn thành thực đơn dinh dưỡng trong 7 ngày qua</p>
+                    </div>
+                    
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={exportWeeklyReportPDF}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm shadow-emerald-50 transition-all cursor-pointer"
+                      >
+                        <FileDown size={12} />
+                        {lang === 'vi' ? 'Xuất báo cáo tuần' : 'Export PDF'}
+                      </button>
+
+                      {(() => {
+                        const trendDays = get7DayTrendData();
+                        const avgCompliance = Math.round(trendDays.reduce((acc, item) => acc + item.compliance, 0) / 7);
+                        let statusText = "Khởi đầu mới";
+                        let statusBg = "bg-slate-50 text-slate-500 border-slate-100";
+                        if (avgCompliance >= 80) {
+                          statusText = "Xuất sắc";
+                          statusBg = "bg-emerald-50 text-emerald-700 border-emerald-100";
+                        } else if (avgCompliance >= 50) {
+                          statusText = "Khá tốt";
+                          statusBg = "bg-blue-50 text-blue-700 border-blue-100";
+                        } else if (avgCompliance > 0) {
+                          statusText = "Cần cải thiện";
+                          statusBg = "bg-amber-50 text-amber-700 border-amber-100";
+                        }
+                        return (
+                          <span className={`px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider rounded-full border ${statusBg}`}>
+                            Đánh giá: {statusText}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                    {/* Stats Columns on Left */}
+                    <div className="md:col-span-4 grid grid-cols-2 md:grid-cols-1 gap-4">
+                      {(() => {
+                        const trendDays = get7DayTrendData();
+                        const avgCompliance = Math.round(trendDays.reduce((acc, item) => acc + item.compliance, 0) / 7);
+                        const activeStreak = calculateStreak(trendDays);
+                        
+                        return (
+                          <>
+                            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100/80 flex flex-col justify-between">
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tuân thủ Tb tuần</span>
+                              <div className="flex items-baseline gap-1 mt-1">
+                                <span className="text-2xl font-black text-slate-800">{avgCompliance}%</span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 font-medium mt-1">
+                                {avgCompliance >= 80 ? "Chỉ số hoàn hảo!" : avgCompliance >= 40 ? "Đang đi đúng hướng." : "Cố gắng log thêm bữa ăn nhé."}
+                              </p>
+                            </div>
+
+                            <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-50 flex flex-col justify-between">
+                              <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1">
+                                🔥 Chuỗi tuân thủ
+                              </span>
+                              <div className="flex items-baseline gap-1 mt-1">
+                                <span className="text-2xl font-black text-emerald-700">{activeStreak}</span>
+                                <span className="text-[10px] text-emerald-600 font-bold">ngày liên tiếp</span>
+                              </div>
+                              <p className="text-[10px] text-emerald-600 font-medium mt-1">Duy trì thói quen lành mạnh.</p>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Elegant Area Chart using Recharts on the right */}
+                    <div className="md:col-span-8 bg-slate-50/20 rounded-2xl p-4 border border-slate-100">
+                      <div className="h-[140px] w-full">
+                        {(() => {
+                          const chartData = get7DayTrendData();
+                          return (
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                                <defs>
+                                  <linearGradient id="colorCompliance" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                  </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis 
+                                  dataKey="dayLabel" 
+                                  stroke="#94a3b8" 
+                                  tickLine={false}
+                                  axisLine={false}
+                                  style={{ fontSize: '9px', fontWeight: 700 }} 
+                                />
+                                <YAxis 
+                                  stroke="#94a3b8" 
+                                  domain={[0, 100]} 
+                                  tickLine={false}
+                                  axisLine={false}
+                                  ticks={[0, 25, 50, 75, 100]}
+                                  tickFormatter={(v) => `${v}%`}
+                                  style={{ fontSize: '9px', fontWeight: 700 }} 
+                                />
+                                <Tooltip 
+                                  cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '4 4' }}
+                                  content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                      const data = payload[0].payload;
+                                      return (
+                                        <div className="bg-slate-900 text-white px-3 py-2 rounded-xl text-[10px] font-bold shadow-xl border border-slate-800">
+                                          <p className="mb-0.5 opacity-70">{data.dateStr.split('-').reverse().join('/')}</p>
+                                          <p className="text-emerald-400 font-black">Tuân thủ: {data.compliance}%</p>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  }}
+                                />
+                                <Area 
+                                  type="monotone" 
+                                  dataKey="compliance" 
+                                  stroke="#10b981" 
+                                  strokeWidth={2.5} 
+                                  fill="url(#colorCompliance)" 
+                                  activeDot={{ r: 6, strokeWidth: 0, fill: '#10b981' }} 
+                                />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </section>
 
                 {mealPlan && <AITipsSection tips={mealPlan.aiTips} />}
 
@@ -4807,6 +5294,148 @@ function AdminView({ onBack }: { onBack: () => void }) {
             </motion.div>
           </>
         )}
+        {showAddDiseaseModal && (
+          <>
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setShowAddDiseaseModal(false)}
+               className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100]" 
+            />
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               exit={{ opacity: 0, scale: 0.95 }}
+               className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg p-6 rounded-3xl shadow-2xl z-[101] overflow-y-auto max-h-[90vh] transition-colors ${isAdminDarkMode ? 'bg-slate-900 text-white border border-slate-800' : 'bg-white text-slate-900 border border-slate-100'}`}
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-black tracking-tight text-emerald-600 dark:text-emerald-400">Thêm Bệnh Lý Mới</h3>
+                <button onClick={() => setShowAddDiseaseModal(false)} className={`p-2 rounded-full transition-colors ${isAdminDarkMode ? 'hover:bg-slate-800' : 'hover:bg-slate-100'}`}>
+                  <X size={20} className={isAdminDarkMode ? 'text-slate-500' : 'text-slate-400'} />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddDisease} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1">Tên Bệnh Lý <span className="text-rose-500">*</span></label>
+                  <input 
+                    type="text" 
+                    value={newDiseaseName}
+                    onChange={(e) => setNewDiseaseName(e.target.value)}
+                    placeholder="VD: Cao Huyết Áp"
+                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${isAdminDarkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500'}`}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1">Mã ID (tự động tạo hoặc nhập thủ công) <span className="text-rose-500">*</span></label>
+                  <input 
+                    type="text" 
+                    value={newDiseaseId}
+                    onChange={(e) => {
+                      setNewDiseaseId(e.target.value);
+                      setIsIdManuallyEdited(true);
+                    }}
+                    placeholder="VD: cao-huyet-ap"
+                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${isAdminDarkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500'}`}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1">Danh Mục <span className="text-rose-500">*</span></label>
+                  <select 
+                    value={newDiseaseCategory}
+                    onChange={(e) => setNewDiseaseCategory(e.target.value)}
+                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${isAdminDarkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500'}`}
+                    required
+                  >
+                    <option value="">-- Chọn danh mục --</option>
+                    {DISEASE_CATEGORIES.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1">Mô Tả Bệnh Lý <span className="text-rose-500">*</span></label>
+                  <textarea 
+                    value={newDiseaseDescription}
+                    onChange={(e) => setNewDiseaseDescription(e.target.value)}
+                    placeholder="Mô tả tóm tắt về bệnh lý..."
+                    rows={3}
+                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${isAdminDarkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500'}`}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1">URL Hình Ảnh Gợi Ý <span className="text-rose-500">*</span></label>
+                  <input 
+                    type="url" 
+                    value={newDiseaseImageUrl}
+                    onChange={(e) => setNewDiseaseImageUrl(e.target.value)}
+                    placeholder="Bắt đầu bằng http hoặc https"
+                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${isAdminDarkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500'}`}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1">Thực phẩm nên ăn (phân tách bằng dấu phẩy)</label>
+                  <textarea 
+                    value={newDiseaseShouldEat}
+                    onChange={(e) => setNewDiseaseShouldEat(e.target.value)}
+                    placeholder="VD: Rau xanh, Cá hồi, Trái cây tươi"
+                    rows={2}
+                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${isAdminDarkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500'}`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1">Thực phẩm cần tránh (phân tách bằng dấu phẩy)</label>
+                  <textarea 
+                    value={newDiseaseShouldAvoid}
+                    onChange={(e) => setNewDiseaseShouldAvoid(e.target.value)}
+                    placeholder="VD: Muối, Đồ ăn nhanh, Sốt béo"
+                    rows={2}
+                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${isAdminDarkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500'}`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider mb-1">Thực đơn mẫu gợi ý (phân tách bằng dấu phẩy)</label>
+                  <textarea 
+                    value={newDiseaseSampleMenu}
+                    onChange={(e) => setNewDiseaseSampleMenu(e.target.value)}
+                    placeholder="VD: Cháo yến mạch buổi sáng, Cá hấp sả buổi trưa"
+                    rows={2}
+                    className={`w-full p-3 rounded-xl border text-sm outline-none transition-all ${isAdminDarkMode ? 'bg-slate-800 border-slate-700 text-white focus:border-emerald-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-emerald-500'}`}
+                  />
+                </div>
+
+                <div className="pt-4 flex gap-3 justify-end">
+                  <button 
+                    type="button"
+                    onClick={() => setShowAddDiseaseModal(false)}
+                    className={`px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider border ${isAdminDarkMode ? 'border-slate-700 hover:bg-slate-800 text-slate-300' : 'border-slate-200 hover:bg-slate-50 text-slate-600'}`}
+                  >
+                    Hủy
+                  </button>
+                  <button 
+                    type="submit"
+                    disabled={isAddingDisease}
+                    className="px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50"
+                  >
+                    {isAddingDisease ? 'Đang thêm...' : 'Xác nhận Thêm'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </>
+        )}
       </AnimatePresence>
     </motion.div>
   );
@@ -4910,6 +5539,7 @@ function ProfileScreen({ profile, onBack, onUpdate, onUpgrade, onAdmin }: { prof
   const [chartTab, setChartTab] = useState<'both' | 'weight' | 'bmi'>('both');
   const [newWeight, setNewWeight] = useState<string>('');
   const [newDate, setNewDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   
   const handleOpenChat = () => {
     window.dispatchEvent(new CustomEvent('openNutriChat'));
@@ -5104,7 +5734,7 @@ function ProfileScreen({ profile, onBack, onUpdate, onUpgrade, onAdmin }: { prof
           </div>
 
           <button 
-            onClick={() => onUpdate(formData)}
+            onClick={() => setShowConfirmModal(true)}
             className="w-full bg-emerald-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-emerald-100 active:scale-[0.98] transition-all hover:bg-emerald-700 font-bold uppercase tracking-wider text-sm mt-4 flex items-center justify-center gap-2"
           >
              Lưu thay đổi hồ sơ
@@ -5362,6 +5992,56 @@ function ProfileScreen({ profile, onBack, onUpdate, onUpgrade, onAdmin }: { prof
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showConfirmModal && (
+          <>
+            <motion.div 
+               initial={{ opacity: 0 }}
+               animate={{ opacity: 1 }}
+               exit={{ opacity: 0 }}
+               onClick={() => setShowConfirmModal(false)}
+               className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100]" 
+            />
+            <motion.div 
+               initial={{ opacity: 0, scale: 0.95 }}
+               animate={{ opacity: 1, scale: 1 }}
+               exit={{ opacity: 0, scale: 0.95 }}
+               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md p-6 rounded-3xl shadow-2xl z-[101] bg-white text-slate-900 border border-slate-100"
+            >
+              <div className="flex items-start gap-4 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0 text-amber-600">
+                  <AlertTriangle size={24} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black tracking-tight text-slate-900">Xác nhận cập nhật hồ sơ?</h3>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                    Thông tin thay đổi này sẽ làm cập nhật lại các chỉ số và gợi ý thực đơn dinh dưỡng từ AI. Hãy chắc chắn rằng bạn đã kiểm tra các thông tin chính xác.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end mt-6">
+                <button 
+                  onClick={() => setShowConfirmModal(false)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
+                >
+                  Hủy bỏ
+                </button>
+                <button 
+                  onClick={() => {
+                    onUpdate(formData);
+                    setShowConfirmModal(false);
+                  }}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
+                >
+                  Xác nhận lưu
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
