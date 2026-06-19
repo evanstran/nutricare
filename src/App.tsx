@@ -69,6 +69,7 @@ import type { UserProfile, MealPlan, ComplianceLog, NutritionInfo, Disease, Heal
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { LiveSupportChat, AdminChatPanel } from './components/LiveSupportChat';
 import { RecipeSearch } from './components/RecipeSearch';
+import { AppInstallButton } from './components/AppInstallButton';
 
 // Utils
 enum OperationType {
@@ -3402,6 +3403,8 @@ export default function App() {
                 </div>
               </div>
             </div>
+            
+            <AppInstallButton lang={lang} />
           </motion.div>
           <motion.div 
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
