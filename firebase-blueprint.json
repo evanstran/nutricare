@@ -63,6 +63,22 @@
         "status": { "type": "string", "enum": ["followed", "skipped", "modified"] },
         "notes": { "type": "string" }
       }
+    },
+    "LiveChat": {
+      "title": "Live Support Chat",
+      "description": "Real-time chat session info between guests/users and admin",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "lastMessageTime": { "type": "string", "format": "date-time" },
+        "unreadCountForAdmin": { "type": "number" },
+        "unreadCountForUser": { "type": "number" },
+        "status": { "type": "string", "enum": ["active", "closed"] }
+      }
     }
   },
   "firestore": {
@@ -81,6 +97,10 @@
     "/complianceLogs/{logId}": {
       "schema": "ComplianceLog",
       "description": "Tracking history"
+    },
+    "/live_chats/{sessionId}": {
+      "schema": "LiveChat",
+      "description": "Active and history live-support session tracking"
     }
   }
 }

@@ -4,6 +4,11 @@ export interface WeightEntry {
   bmi: number;
 }
 
+export interface WaterEntry {
+  date: string; // "YYYY-MM-DD"
+  amount: number; // in ml
+}
+
 export interface UserProfile {
   uid: string;
   name: string;
@@ -22,6 +27,7 @@ export interface UserProfile {
   likedIngredients?: string[];
   dislikedIngredients?: string[];
   weightHistory?: WeightEntry[];
+  waterHistory?: WaterEntry[];
   createdAt: string;
 }
 

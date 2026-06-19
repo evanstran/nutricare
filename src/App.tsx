@@ -67,6 +67,8 @@ import {
 import { onAuthStateChanged, User } from 'firebase/auth';
 import type { UserProfile, MealPlan, ComplianceLog, NutritionInfo, Disease, HealthTip, WeightEntry } from './types';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { LiveSupportChat, AdminChatPanel } from './components/LiveSupportChat';
+import { RecipeSearch } from './components/RecipeSearch';
 
 // Utils
 enum OperationType {
@@ -366,6 +368,124 @@ const NutritionBadge = ({ info }: { info?: NutritionInfo }) => {
           })}
         </div>
       )}
+    </div>
+  );
+};
+
+const HydrationTracker = ({ 
+  selectedDate, 
+  onUpdateWater, 
+  getWaterIntake, 
+  lang 
+}: { 
+  selectedDate: string;
+  onUpdateWater: (date: string, delta: number) => void;
+  getWaterIntake: (date: string) => number;
+  lang: string;
+}) => {
+  const currentIntake = getWaterIntake(selectedDate);
+  const dailyGoal = 2000; // in ml
+  const numCupsTotal = 8; // 250ml per cup
+  const numCupsActive = Math.min(numCupsTotal, Math.floor(currentIntake / 250));
+  const progressPercent = Math.min(100, Math.round((currentIntake / dailyGoal) * 100));
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col gap-4">
+      <div className="flex justify-between items-center">
+        <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+          <Droplets size={14} className="text-sky-500" />
+          {lang === 'vi' ? 'Theo dõi nước uống' : 'Hydration Tracker'}
+        </h3>
+        <span className="text-[10px] font-black text-sky-600 bg-sky-50 px-2 py-0.5 rounded-md">
+          {progressPercent}%
+        </span>
+      </div>
+
+      {/* Progress metrics */}
+      <div className="flex items-baseline justify-between">
+        <div>
+          <span className="text-2xl font-black text-slate-800 tracking-tight">
+            {currentIntake}
+          </span>
+          <span className="text-xs text-slate-550 font-bold ml-1">
+            / {dailyGoal} ml
+          </span>
+        </div>
+        <span className="text-[10px] text-slate-400 font-bold">
+          {lang === 'vi' ? 'Mục tiêu: 8 ly' : 'Goal: 8 cups'}
+        </span>
+      </div>
+
+      {/* Modern Wave Progress Bar */}
+      <div className="relative h-3 bg-slate-100 rounded-full overflow-hidden">
+        <motion.div 
+          initial={{ width: 0 }}
+          animate={{ width: `${progressPercent}%` }}
+          className="h-full bg-gradient-to-r from-sky-450 to-blue-500 rounded-full"
+        />
+      </div>
+
+      {/* 8 Cups Interactive Grid */}
+      <div className="flex justify-between items-center px-1 my-1">
+        {Array.from({ length: numCupsTotal }, (_, i) => {
+          const isActive = i < numCupsActive;
+          const isNext = i === numCupsActive;
+          return (
+            <button
+              key={i}
+              onClick={() => onUpdateWater(selectedDate, isActive ? -250 : 250)}
+              className="relative p-1 transition-all transform hover:scale-125 active:scale-90"
+              title={lang === 'vi' ? `Ly nước số ${i + 1} (250ml)` : `Cup ${i + 1} (250ml)`}
+              id={`hydration-cup-${i}`}
+            >
+              <Droplets 
+                size={18} 
+                className={`transition-colors duration-300 ${
+                  isActive 
+                    ? 'text-sky-500 fill-sky-400 filter drop-shadow-[0_2px_4px_rgba(14,165,233,0.3)]' 
+                    : isNext 
+                      ? 'text-slate-400 hover:text-sky-400 border-none' 
+                      : 'text-slate-200'
+                }`} 
+              />
+              {isActive && (
+                <span className="absolute bottom-0 right-0 w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Log Buttons Actions */}
+      <div className="flex gap-2.5">
+        <button
+          onClick={() => onUpdateWater(selectedDate, 250)}
+          className="flex-grow py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm shadow-sky-100 active:scale-[0.98] transition-all flex items-center justify-center gap-1 cursor-pointer"
+          id="hydration-add-btn"
+        >
+          <Plus size={12} strokeWidth={3} />
+          {lang === 'vi' ? 'Thêm 1 ly (250ml)' : 'Add 1 cup (250ml)'}
+        </button>
+        {currentIntake > 0 && (
+          <button
+            onClick={() => onUpdateWater(selectedDate, -250)}
+            className="px-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-500 hover:bg-slate-100 rounded-xl text-[10px] font-black uppercase tracking-wider active:scale-[0.98] transition-all flex items-center justify-center cursor-pointer"
+            id="hydration-sub-btn"
+            title={lang === 'vi' ? 'Bớt 250 ml' : 'Subtract 250 ml'}
+          >
+            <span className="font-bold">-250</span>
+          </button>
+        )}
+      </div>
+
+      {/* Mini tip text */}
+      <p className="text-[10px] text-slate-400 font-medium leading-relaxed italic text-center">
+        {currentIntake >= dailyGoal 
+          ? (lang === 'vi' ? '🎉 Tuyệt vời! Bạn đã đạt đủ lượng nước uống hôm nay.' : '🎉 Amazing! You achieved today\'s hydration baseline.')
+          : (lang === 'vi' 
+            ? `Hãy bổ sung thêm ${dailyGoal - currentIntake}ml nữa để tối ưu hóa hấp thu dinh dưỡng.` 
+            : `Drink ${dailyGoal - currentIntake}ml more to support maximum nutritional metabolism.`)}
+      </p>
     </div>
   );
 };
@@ -1958,9 +2078,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, lang }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | React.ReactNode>('');
   const [loading, setLoading] = useState(false);
-  const [showIframeHelp] = useState(true);
+  const [showIframeHelp] = useState(false);
 
   if (!isOpen) return null;
 
@@ -1973,8 +2093,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, lang }) => {
     } catch (err: any) {
       console.error(err);
       const errMsg = lang === 'en' 
-        ? "Google Login blocked or cancelled. Tip: If you see a policy warning, please click 'Open inside a new tab' in AI Studio, use Email/Password login, or add your email as a Google Console Test User!"
-        : "Đăng nhập Google bị chặn hoặc bị hủy. Mẹo: Nếu bạn gặp lỗi chính sách của Google, hãy nhấp chọn 'Mở trong tab mới' trên thanh công cụ AI Studio, sử dụng Đăng nhập bằng Email/Mật khẩu bên dưới, hoặc thêm email của bạn vào danh sách Test Users Google Console!";
+        ? "Google Sign-In was blocked or cancelled."
+        : "Đăng nhập Google bị chặn hoặc bị hủy.";
       setError(errMsg);
     } finally {
       setLoading(false);
@@ -2003,8 +2123,44 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, lang }) => {
       onClose();
     } catch (err: any) {
       console.error(err);
-      let friendlyError = err.message;
-      if (err.code === 'auth/email-already-in-use') {
+      let friendlyError: string | React.ReactNode = err.message;
+      if (err.code === 'auth/operation-not-allowed' || (err.message && err.message.includes('auth/operation-not-allowed'))) {
+        friendlyError = lang === 'en' ? (
+          <div className="space-y-2">
+            <p className="font-bold text-rose-800">ERROR: Email Authentication Disabled (auth/operation-not-allowed)</p>
+            <p className="text-[11px] leading-relaxed text-rose-700">
+              Firebase Authentication requires you to manually <b>ENABLE</b> the <b className="underline">Email/Password</b> provider in your Firebase project console.
+            </p>
+            <div className="text-[11px] space-y-1.5 bg-white/70 p-3 rounded-xl border border-rose-100 text-rose-900 font-medium">
+              <p className="font-bold text-slate-800">How to enable Email/Password provider:</p>
+              <div className="space-y-1 pl-1">
+                <p>1. Open the <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-600 underline font-black">Firebase Console</a></p>
+                <p>2. Select your Firebase project.</p>
+                <p>3. Click <b>Authentication</b> in the left sidebar.</p>
+                <p>4. Go to the <b>Sign-in method</b> tab.</p>
+                <p>5. Click on <b>Email/Password</b>, toggle "Enable", and click <b>Save</b>.</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <p className="font-bold text-rose-800">LỖI: Chưa kích hoạt đăng ký Email (auth/operation-not-allowed)</p>
+            <p className="text-[11px] leading-relaxed text-rose-700">
+              Hệ thống yêu cầu bạn phải <b>KÍCH HOẠT</b> phương thức <b className="underline">Email/Password</b> trong Firebase Console của bạn để cho phép tạo tài khoản mới.
+            </p>
+            <div className="text-[11px] space-y-1.5 bg-white/70 p-3 rounded-xl border border-rose-100 text-rose-900 font-medium">
+              <p className="font-bold text-slate-800">Các bước kích hoạt nhanh chóng:</p>
+              <div className="space-y-1 pl-1">
+                <p>1. Truy cập <a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-600 underline font-black">Firebase Console</a></p>
+                <p>2. Chọn dự án tương ứng của bạn.</p>
+                <p>3. Chọn mục <b>Authentication</b> ở menu bên trái.</p>
+                <p>4. Chuyển sang tab <b>Sign-in method</b>.</p>
+                <p>5. Bấm chọn <b>Email/Password</b>, chuyển sang trạng thái kích hoạt (Enable) cả hai tùy chọn rồi nhấp <b>Lưu (Save)</b>.</p>
+              </div>
+            </div>
+          </div>
+        );
+      } else if (err.code === 'auth/email-already-in-use') {
         friendlyError = lang === 'en' ? 'This email is already in use.' : 'Email này đã được sử dụng.';
       } else if (err.code === 'auth/invalid-email') {
         friendlyError = lang === 'en' ? 'Invalid email address.' : 'Địa chỉ email không hợp lệ.';
@@ -2295,6 +2451,55 @@ export default function App() {
   const [viewingAllArticles, setViewingAllArticles] = useState(false);
   const [selectedArticle, setSelectedArticle] = useState<any | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showLiveSupport, setShowLiveSupport] = useState(false);
+  const [localWaterState, setLocalWaterState] = useState<{ [date: string]: number }>({});
+
+  const getWaterIntakeForDate = (dateStr: string): number => {
+    if (profile?.waterHistory) {
+      const found = profile.waterHistory.find(item => item.date === dateStr);
+      if (found) return found.amount;
+    }
+    // Fallback to local state if offline or user not logged in
+    return localWaterState[dateStr] || Number(localStorage.getItem(`water_history_${dateStr}`) || 0);
+  };
+
+  const handleUpdateWater = async (dateStr: string, amountChange: number) => {
+    if (!profile || !user) {
+      // Offline/Guest fallback
+      const localKey = `water_history_${dateStr}`;
+      const current = Number(localStorage.getItem(localKey) || 0);
+      const updated = Math.max(0, current + amountChange);
+      localStorage.setItem(localKey, updated.toString());
+      setLocalWaterState(prev => ({ ...prev, [dateStr]: updated }));
+      return;
+    }
+
+    const existingHistory = profile.waterHistory || [];
+    const existingDayEntry = existingHistory.find(item => item.date === dateStr);
+
+    let updatedHistory;
+    if (existingDayEntry) {
+      updatedHistory = existingHistory.map(item => 
+        item.date === dateStr 
+          ? { ...item, amount: Math.max(0, item.amount + amountChange) }
+          : item
+      );
+    } else {
+      updatedHistory = [...existingHistory, { date: dateStr, amount: Math.max(0, amountChange) }];
+    }
+
+    const updatedProfile: UserProfile = {
+      ...profile,
+      waterHistory: updatedHistory,
+    };
+
+    try {
+      await setDoc(doc(db, 'users', user.uid), updatedProfile);
+      setProfile(updatedProfile);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
+    }
+  };
 
   const get7DayTrendData = () => {
     const data = [];
@@ -3590,7 +3795,7 @@ export default function App() {
             </p>
           </div>
           <div className="mt-8 text-center text-[10px] text-slate-300 font-bold uppercase tracking-[0.2em]">
-            © 2024 NutriCare Health AI. Powered by Gemini.
+            © 2026 NutriCare Health AI. Developed by Nutricare.
           </div>
         </footer>
 
@@ -3632,10 +3837,16 @@ export default function App() {
             </p>
           </div>
           <div className="flex items-center gap-3 text-[10px] uppercase font-black tracking-wider text-slate-400">
-            <span className="flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse animate-duration-1000"></span>
-              {lang === 'vi' ? 'Hệ thống trực tuyến' : 'ONLINE'}
-            </span>
+            <button 
+              onClick={() => setShowLiveSupport(true)}
+              className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 hover:border-emerald-500/40 text-emerald-400 px-2.5 py-1 rounded-full transition-all focus:outline-none cursor-pointer"
+            >
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+              <span>{lang === 'vi' ? 'Hỗ trợ trực tuyến' : 'LIVE SUPPORT'}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -3766,6 +3977,13 @@ export default function App() {
                 >
                   <Zap size={16} /> Đổi thực đơn mới
                 </button>
+
+                <HydrationTracker 
+                  selectedDate={selectedDate} 
+                  onUpdateWater={handleUpdateWater} 
+                  getWaterIntake={getWaterIntakeForDate} 
+                  lang={lang} 
+                />
 
                 <div className="geometric-card overflow-hidden mt-4 hidden lg:block">
                   <LazyImage 
@@ -4190,6 +4408,14 @@ export default function App() {
                   />
                 </section>
 
+                <RecipeSearch 
+                  user={user}
+                  mealPlan={mealPlan}
+                  onUpdateMealPlan={(p) => setMealPlan(p)}
+                  lang={lang}
+                  selectedDate={selectedDate}
+                />
+
                 <HealthArticlesSection 
                   tips={healthTips} 
                   loading={loadingTips} 
@@ -4302,6 +4528,15 @@ export default function App() {
       {view !== 'onboarding' && profile && (
         <AIChatbot profile={profile} />
       )}
+
+      {/* Floating Live Support Chat (Vietnamese / English) */}
+      <LiveSupportChat 
+        user={user}
+        profile={profile}
+        lang={lang}
+        isOpen={showLiveSupport}
+        onClose={() => setShowLiveSupport(false)}
+      />
 
       <AllArticlesModal 
         isOpen={viewingAllArticles} 
@@ -4727,7 +4962,7 @@ function AdminView({ onBack }: { onBack: () => void }) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
-  const [adminTab, setAdminTab] = useState<'users' | 'diseases'>('users');
+  const [adminTab, setAdminTab] = useState<'users' | 'diseases' | 'chats'>('users');
   const [diseases, setDiseases] = useState<Disease[]>([]);
   const [isSeeding, setIsSeeding] = useState(false);
 
@@ -4977,7 +5212,7 @@ function AdminView({ onBack }: { onBack: () => void }) {
           <div>
             <h2 className={`text-2xl font-black tracking-tight ${isAdminDarkMode ? 'text-white' : 'text-slate-900'}`}>Quản trị Hệ thống</h2>
             <p className={`text-xs font-bold uppercase tracking-widest mt-1 ${isAdminDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-              {adminTab === 'users' ? `Quản lý ${users.length} người dùng` : `Quản lý ${diseases.length} bệnh lý`}
+              {adminTab === 'users' ? `Quản lý ${users.length} người dùng` : adminTab === 'diseases' ? `Quản lý ${diseases.length} bệnh lý` : 'Quản lý tin nhắn hỗ trợ trực tiếp'}
             </p>
           </div>
         </div>
@@ -5000,6 +5235,12 @@ function AdminView({ onBack }: { onBack: () => void }) {
               className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'diseases' ? (isAdminDarkMode ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm') : 'text-slate-500 hover:text-slate-700'}`}
             >
               Bệnh lý
+            </button>
+            <button 
+              onClick={() => setAdminTab('chats')}
+              className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${adminTab === 'chats' ? (isAdminDarkMode ? 'bg-slate-700 text-white shadow-sm' : 'bg-white text-slate-900 shadow-sm') : 'text-slate-500 hover:text-slate-700'}`}
+            >
+              Hỗ trợ
             </button>
           </div>
         </div>
@@ -5108,6 +5349,8 @@ function AdminView({ onBack }: { onBack: () => void }) {
             </table>
           </div>
         </div>
+      ) : adminTab === 'chats' ? (
+        <AdminChatPanel isAdminDarkMode={isAdminDarkMode} />
       ) : (
         <div className="space-y-6">
           <div className={`p-6 rounded-3xl border shadow-sm flex flex-col sm:flex-row gap-4 justify-between sm:items-center transition-colors ${isAdminDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-100'}`}>
