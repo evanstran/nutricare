@@ -46,11 +46,12 @@ import {
   Coffee,
   TrendingUp,
   Stethoscope as DoctorIcon,
-  FileDown
+  FileDown,
+  Info
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from 'jspdf';
-import { GoogleGenAI, Type } from "@google/genai";
+// GoogleGenAI import removed from client-side
 import { auth, db, loginWithGoogle, loginWithEmail, registerWithEmail } from './lib/firebase';
 import { 
   doc, 
@@ -70,6 +71,8 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tool
 import { LiveSupportChat, AdminChatPanel } from './components/LiveSupportChat';
 import { RecipeSearch } from './components/RecipeSearch';
 import { AppInstallButton } from './components/AppInstallButton';
+import { MoodLogger } from './components/MoodLogger';
+import { MoodAnalysisPanel } from './components/MoodAnalysisPanel';
 
 // Utils
 enum OperationType {
@@ -1170,50 +1173,29 @@ const AIChatbot = ({ profile }: { profile: UserProfile | null }) => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
-      const history = messages.map(m => ({
-        role: m.role === 'model' ? 'model' : 'user',
-        parts: [{ text: m.text }]
-      }));
-
-      const systemPrompt = `
-        Bạn là "AI NutriCare Expert" - Chuyên gia tư vấn dinh dưỡng y khoa thông minh.
-        Hồ sơ người dùng hiện tại:
-        - Tên: ${profile?.name}
-        - Tuổi: ${profile?.age}, Giới tính: ${profile?.gender}
-        - Chỉ số: ${profile?.weight}kg, ${profile?.height}cm
-        - Bệnh lý: ${profile?.diseases.join(", ") || 'Không có'}
-        - Dị ứng: ${profile?.allergies.join(", ") || 'Không có'}
-        - Mức độ vận động: ${profile?.activityLevel}
-
-        QUY TẮC PHẢN HỒI:
-        1. Luôn ưu tiên an toàn thực phẩm liên quan đến bệnh lý (${profile?.diseases.join(", ")}).
-        2. Nếu người dùng hỏi về món ăn gây dị ứng (${profile?.allergies.join(", ")}), hãy cảnh báo mạnh mẽ.
-        3. Văn phong chuyên nghiệp nhưng gần gũi, sử dụng tiếng Việt.
-        4. KHÔNG kê đơn thuốc. Chỉ tư vấn thực phẩm, lối sống và dinh dưỡng.
-        5. Luôn nhắc nhở người dùng tham khảo ý kiến bác sĩ cho các trường hợp cấp tính.
-        6. Câu trả lời ngắn gọn, súc tích, định dạng Markdown nếu cần (list, bold).
-      `;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [
-          { role: 'user', parts: [{ text: systemPrompt }] },
-          ...history,
-          { role: 'user', parts: [{ text: userMessage }] }
-        ],
-        config: {
-          maxOutputTokens: 500,
-          temperature: 0.7,
-        }
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messages,
+          profile,
+          userMessage
+        })
       });
 
-      const aiText = response.text || "Xin lỗi, tôi gặp chút trục trặc khi suy nghĩ. Bạn có thể hỏi lại không?";
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Rất tiếc, máy chủ AI gặp lỗi.");
+      }
+
+      const data = await response.json();
+      const aiText = data.text || "Xin lỗi, tôi gặp chút trục trặc khi suy nghĩ. Bạn có thể hỏi lại không?";
       setMessages(prev => [...prev, { role: 'model', text: aiText }]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat AI Error:", error);
-      setMessages(prev => [...prev, { role: 'model', text: "Rất tiếc, máy chủ AI đang bận. Bạn vui lòng thử lại sau nhé!" }]);
+      setMessages(prev => [...prev, { role: 'model', text: error.message || "Rất tiếc, máy chủ AI đang bận. Bạn vui lòng thử lại sau nhé!" }]);
     } finally {
       setIsLoading(false);
     }
@@ -2453,7 +2435,9 @@ export default function App() {
   const [selectedArticle, setSelectedArticle] = useState<any | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showLiveSupport, setShowLiveSupport] = useState(false);
+  const [activeMoodLogMeal, setActiveMoodLogMeal] = useState<'breakfast' | 'lunch' | 'dinner' | 'snacks' | null>(null);
   const [localWaterState, setLocalWaterState] = useState<{ [date: string]: number }>({});
+  const [showBmiInfo, setShowBmiInfo] = useState(false);
 
   const getWaterIntakeForDate = (dateStr: string): number => {
     if (profile?.waterHistory) {
@@ -2868,39 +2852,20 @@ export default function App() {
   const generateHealthTips = async (p: UserProfile) => {
     setLoadingTips(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const prompt = `
-        Dựa trên hồ sơ người dùng NutriCare:
-        - Tên: ${p.name}
-        - Bệnh lý: ${p.diseases.join(", ")}
-        - Dị ứng: ${p.allergies.join(", ")}
-        - Mức độ vận động: ${p.activityLevel}
-        Cung cấp 3 bài viết/lời khuyên sức khỏe ngắn gọn, súc tích (tiếng Việt).
-        Định dạng JSON: Array<{title: string, content: string, category: 'nutrition'|'lifestyle'|'warning', icon: string}>
-        Sử dụng code icon từ Lucide (ví dụ: 'Apple', 'Zap', 'Activity', 'ShieldCheck', 'Moon', 'Sun', 'Wind').
-      `;
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                content: { type: Type.STRING },
-                category: { type: Type.STRING },
-                icon: { type: Type.STRING }
-              },
-              required: ["title", "content", "category", "icon"]
-            }
-          }
-        }
+      const response = await fetch('/api/generate-tips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ profile: p })
       });
-      const text = response.text || "[]";
-      const data = JSON.parse(text);
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Không thể tạo lời khuyên sức khỏe.");
+      }
+
+      const data = await response.json();
       setHealthTips(data);
     } catch (error) {
       console.error("Error generating tips:", error);
@@ -2974,172 +2939,24 @@ export default function App() {
 
   const generateMeal = async (p: UserProfile, retryCount = 0) => {
     setLoading(true);
-    const models = ["gemini-3-flash-preview", "gemini-3.1-flash-lite-preview"];
-    const currentModel = models[retryCount] || models[models.length - 1];
-
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      
-      const prompt = `
-        Bạn là một chuyên gia dinh dưỡng y khoa (AI NutriCare).
-        Hãy dựa vào hồ sơ sức khỏe người dùng sau để gợi ý thực đơn 1 ngày (Sáng, Trưa, Tối, Bữa phụ):
-        - Tên: ${p.name}
-        - Tuổi: ${p.age}
-        - Cân nặng: ${p.weight}kg, Chiều cao: ${p.height}cm
-        - Bệnh lý: ${p.diseases.join(", ")}
-        - Dị ứng: ${p.allergies.join(", ")}
-        - Thói quen: ${p.habits}
-        - Mức độ vận động: ${p.activityLevel}
-        - Nguyên liệu yêu thích: ${(p.likedIngredients || []).join(", ") || "Không có"}
-        - Nguyên liệu không thích: ${(p.dislikedIngredients || []).join(", ") || "Không có"}
-
-        Yêu cầu:
-        1. Tuân thủ phác đồ dinh dưỡng cho người đang mắc các bệnh trên.
-        2. Loại bỏ hoàn toàn thực phẩm gây dị ứng và ưu tiên loại bỏ các nguyên liệu không thích.
-        3. Phân biệt rõ món nên ăn và món nên tránh.
-        4. Tỉ lệ dinh dưỡng phù hợp với chỉ số BMI và mức vận động.
-        5. Ước tính thành phần dinh dưỡng chi tiết (Calories, Protein, Carbs, Fat, Fiber, Sugar, Sodium và các Vitamin/khoáng chất quan trọng) cho từng bữa ăn.
-        6. Cung cấp danh sách nguyên liệu (ingredients) chi tiết cho từng món ăn trong bữa.
-        7. Ưu tiên các nguyên liệu yêu thích nhưng phải đảm bảo ĐA DẠNG món ăn để tránh nhàm chán (taste fatigue).
-        8. Đảm bảo các món ăn luân phiên, không lặp lại nguyên liệu chính quá nhiều trong cùng 1 ngày và khuyến khích sự thay đổi giữa các ngày.
-      `;
-
-      const response = await ai.models.generateContent({
-        model: currentModel,
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              breakfast: { type: Type.STRING },
-              lunch: { type: Type.STRING },
-              dinner: { type: Type.STRING },
-              snacks: { type: Type.STRING },
-              ingredients: {
-                type: Type.OBJECT,
-                properties: {
-                  breakfast: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  lunch: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  dinner: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  snacks: { type: Type.ARRAY, items: { type: Type.STRING } }
-                },
-                required: ["breakfast", "lunch", "dinner", "snacks"]
-              },
-              nutrition: {
-                type: Type.OBJECT,
-                properties: {
-                  breakfast: {
-                    type: Type.OBJECT,
-                    properties: {
-                      calories: { type: Type.NUMBER },
-                      protein: { type: Type.NUMBER },
-                      carbs: { type: Type.NUMBER },
-                      fat: { type: Type.NUMBER },
-                      fiber: { type: Type.NUMBER },
-                      sugar: { type: Type.NUMBER },
-                      sodium: { type: Type.NUMBER },
-                      vitamins: {
-                        type: Type.OBJECT,
-                        properties: {
-                          vitaminA: { type: Type.STRING },
-                          vitaminC: { type: Type.STRING },
-                          vitaminD: { type: Type.STRING },
-                          calcium: { type: Type.STRING },
-                          iron: { type: Type.STRING },
-                          potassium: { type: Type.STRING }
-                        }
-                      }
-                    },
-                    required: ["calories", "protein", "carbs", "fat", "fiber", "sugar", "sodium"]
-                  },
-                  lunch: {
-                    type: Type.OBJECT,
-                    properties: {
-                      calories: { type: Type.NUMBER },
-                      protein: { type: Type.NUMBER },
-                      carbs: { type: Type.NUMBER },
-                      fat: { type: Type.NUMBER },
-                      fiber: { type: Type.NUMBER },
-                      sugar: { type: Type.NUMBER },
-                      sodium: { type: Type.NUMBER },
-                      vitamins: {
-                        type: Type.OBJECT,
-                        properties: {
-                          vitaminA: { type: Type.STRING },
-                          vitaminC: { type: Type.STRING },
-                          vitaminD: { type: Type.STRING },
-                          calcium: { type: Type.STRING },
-                          iron: { type: Type.STRING },
-                          potassium: { type: Type.STRING }
-                        }
-                      }
-                    },
-                    required: ["calories", "protein", "carbs", "fat", "fiber", "sugar", "sodium"]
-                  },
-                  dinner: {
-                    type: Type.OBJECT,
-                    properties: {
-                      calories: { type: Type.NUMBER },
-                      protein: { type: Type.NUMBER },
-                      carbs: { type: Type.NUMBER },
-                      fat: { type: Type.NUMBER },
-                      fiber: { type: Type.NUMBER },
-                      sugar: { type: Type.NUMBER },
-                      sodium: { type: Type.NUMBER },
-                      vitamins: {
-                        type: Type.OBJECT,
-                        properties: {
-                          vitaminA: { type: Type.STRING },
-                          vitaminC: { type: Type.STRING },
-                          vitaminD: { type: Type.STRING },
-                          calcium: { type: Type.STRING },
-                          iron: { type: Type.STRING },
-                          potassium: { type: Type.STRING }
-                        }
-                      }
-                    },
-                    required: ["calories", "protein", "carbs", "fat", "fiber", "sugar", "sodium"]
-                  },
-                  snacks: {
-                    type: Type.OBJECT,
-                    properties: {
-                      calories: { type: Type.NUMBER },
-                      protein: { type: Type.NUMBER },
-                      carbs: { type: Type.NUMBER },
-                      fat: { type: Type.NUMBER },
-                      fiber: { type: Type.NUMBER },
-                      sugar: { type: Type.NUMBER },
-                      sodium: { type: Type.NUMBER },
-                      vitamins: {
-                        type: Type.OBJECT,
-                        properties: {
-                          vitaminA: { type: Type.STRING },
-                          vitaminC: { type: Type.STRING },
-                          vitaminD: { type: Type.STRING },
-                          calcium: { type: Type.STRING },
-                          iron: { type: Type.STRING },
-                          potassium: { type: Type.STRING }
-                        }
-                      }
-                    },
-                    required: ["calories", "protein", "carbs", "fat", "fiber", "sugar", "sodium"]
-                  }
-                },
-                required: ["breakfast", "lunch", "dinner", "snacks"]
-              },
-              aiTips: { type: Type.STRING },
-              shouldAvoid: { type: Type.ARRAY, items: { type: Type.STRING } },
-              shouldEat: { type: Type.ARRAY, items: { type: Type.STRING } },
-            },
-            required: ["breakfast", "lunch", "dinner", "snacks", "nutrition", "aiTips", "shouldAvoid", "shouldEat", "ingredients"]
-          }
-        }
+      const response = await fetch('/api/generate-meal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          profile: p,
+          retryCount
+        })
       });
 
-      const textValue = response.text || "{}";
-      const data = JSON.parse(textValue);
-      
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Không thể khởi tạo thực đơn.");
+      }
+
+      const data = await response.json();
       const today = new Date().toISOString().split('T')[0];
       const newMealPlan: MealPlan = {
         userId: p.uid,
@@ -3152,19 +2969,18 @@ export default function App() {
       await setDoc(doc(db, 'mealPlans', docId), newMealPlan);
       setMealPlan(newMealPlan);
     } catch (error: any) {
-      console.error(`AI Error with model ${currentModel}:`, error);
-      
-      // Handle 429 Resource Exhausted
-      if ((error.message?.includes("429") || error.status === 429) && retryCount < models.length - 1) {
-        console.log(`Model ${currentModel} exhausted, retrying with ${models[retryCount + 1]}...`);
-        // Small delay before retry
-        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+      console.error(`AI Error retry count ${retryCount}:`, error);
+
+      // Handle 429 Resource Exhausted on retry list
+      if ((error.message?.includes("429") || error.message?.includes("Exhausted")) && retryCount < 1) {
+        console.log(`Retrying with fallback model...`);
+        await new Promise(resolve => setTimeout(resolve, 1500));
         return generateMeal(p, retryCount + 1);
       }
 
-      alert("Máy chủ AI đang quá tải hoặc gặp sự cố. Vui lòng thử lại sau vài giây!");
+      alert(error.message || "Máy chủ AI gặp sự cố. Vui lòng cấu hình API key hợp lệ hoặc thử lại sau.");
     } finally {
-      if (retryCount === 0 || !mealPlan) {
+      if (retryCount === 0) {
         setLoading(false);
       }
     }
@@ -3182,6 +2998,36 @@ export default function App() {
 
     try {
       await setDoc(doc(collection(db, 'complianceLogs')), log);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'complianceLogs');
+    }
+  };
+
+  const handleSaveMoodLog = async (mealType: ComplianceLog['mealType'], mood?: ComplianceLog['mood'], moodNote?: string) => {
+    if (!user) return;
+    
+    const existingLog = logs.find(l => l.mealType === mealType && l.date === selectedDate);
+    
+    try {
+      if (existingLog && existingLog.id) {
+        const updatedLog = {
+          ...existingLog,
+          mood,
+          moodNote
+        };
+        await setDoc(doc(db, 'complianceLogs', existingLog.id), updatedLog);
+      } else {
+        const newLog: Partial<ComplianceLog> = {
+          userId: user.uid,
+          date: selectedDate,
+          mealType,
+          status: 'followed',
+          timestamp: new Date().toISOString(),
+          mood,
+          moodNote
+        };
+        await setDoc(doc(collection(db, 'complianceLogs')), newLog);
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, 'complianceLogs');
     }
@@ -3313,7 +3159,7 @@ export default function App() {
               <span className="hidden sm:inline text-slate-400 font-bold">|</span>
               <p className="text-slate-200">
                 {lang === 'vi' 
-                  ? 'Ứng dụng đang trong giai đoạn thử nghiệm lâm sàng. Vui lòng phản hồi góp ý tại phần trò chuyện.'
+                  ? 'Ứng dụng đang trong giai đoạn thử nghiệm. Vui lòng phản hồi góp ý tại phần trò chuyện.'
                   : 'Application is under clinical test phase. Please provide feedback in the active chat workspace.'}
               </p>
             </div>
@@ -3835,7 +3681,7 @@ export default function App() {
             <span className="hidden sm:inline text-slate-400 font-bold">|</span>
             <p className="text-slate-200">
               {lang === 'vi' 
-                ? 'Ứng dụng đang trong giai đoạn thử nghiệm lâm sàng. Vui lòng phản hồi góp ý tại phần trò chuyện.'
+                ? 'Ứng dụng đang trong giai đoạn thử nghiệm. Vui lòng phản hồi góp ý tại phần trò chuyện.'
                 : 'Application is under clinical test phase. Please provide feedback in the active chat workspace.'}
             </p>
           </div>
@@ -3899,8 +3745,9 @@ export default function App() {
               className="grid grid-cols-12 gap-6 h-full"
             >
               {/* Sidebar: Health Profile */}
-              <aside className="col-span-12 lg:col-span-3 flex flex-col gap-4">
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+              <aside className="col-span-12 lg:col-span-4 flex flex-col gap-4">
+                <div className="bg-gradient-to-br from-white via-white to-emerald-50/40 border border-slate-100 rounded-2xl p-5 shadow-[0_8px_30px_rgb(209,250,229,0.3)] hover:shadow-[0_12px_40px_rgb(209,250,229,0.5)] transition-all duration-300 relative overflow-hidden">
+                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
                    <div className="flex justify-between items-center mb-4">
                     <h2 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hồ sơ sức khỏe</h2>
                     <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter ${
@@ -3931,11 +3778,98 @@ export default function App() {
                       <span className="text-slate-600 font-medium">Tuổi / Giới</span>
                       <span className="font-bold">{profile?.age} / {profile?.gender === 'male' ? 'Nam' : 'Nữ'}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-600 font-medium">Chỉ số BMI</span>
-                      <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md font-bold">
-                        {(profile ? (profile.weight / (profile.height/100 * profile.height/100)) : 0).toFixed(1)}
-                      </span>
+                    <div className="space-y-3 pb-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600 font-medium">Chỉ số BMI</span>
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-md font-bold">
+                          {(profile ? (profile.weight / (profile.height/100 * profile.height/100)) : 0).toFixed(1)}
+                        </span>
+                      </div>
+                      {(() => {
+                        const bmiVal = profile ? (profile.weight / ((profile.height / 100) * (profile.height / 100))) : 0;
+                        let bmiCategory = "Cân đối";
+                        let bmiColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
+                        let markerLeft = "50%";
+                        if (bmiVal < 18.5) {
+                          bmiCategory = "Thiếu cân";
+                          bmiColor = "text-blue-600 bg-blue-50 border-blue-200";
+                          const pct = Math.max(0, Math.min(30, ((bmiVal - 15) / 3.5) * 30));
+                          markerLeft = `${pct}%`;
+                        } else if (bmiVal >= 18.5 && bmiVal < 25) {
+                          bmiCategory = "Cân đối";
+                          bmiColor = "text-emerald-600 bg-emerald-50 border-emerald-200";
+                          const pct = 30 + ((bmiVal - 18.5) / 6.5) * 40;
+                          markerLeft = `${Math.max(30, Math.min(70, pct))}%`;
+                        } else {
+                          bmiCategory = "Thừa cân/Béo phì";
+                          bmiColor = "text-rose-600 bg-rose-50 border-rose-200";
+                          const pct = 70 + ((bmiVal - 25) / 10) * 30;
+                          markerLeft = `${Math.max(70, Math.min(100, pct))}%`;
+                        }
+                        return (
+                          <div className="p-2.5 bg-slate-50/75 rounded-xl border border-slate-100/50">
+                            <div className="flex justify-between items-center mb-2 text-[10px] font-semibold text-slate-500">
+                              <span>Tình trạng thể trạng:</span>
+                              <span className={`px-1.5 py-0.5 border rounded text-[9px] font-bold ${bmiColor}`}>
+                                {bmiCategory}
+                              </span>
+                            </div>
+                            <div className="relative h-2 bg-gradient-to-r from-blue-300 via-emerald-400 to-rose-400 rounded-full overflow-visible mt-2.5 mb-1 bg-no-repeat">
+                              {/* Current BMI Marker */}
+                              <div 
+                                className="absolute -top-1 w-4 h-4 bg-white border-2 border-slate-700 rounded-full shadow-[0_2px_4px_rgba(0,0,0,0.15)] -translate-x-1/2 flex items-center justify-center transition-all duration-500 ease-out z-10"
+                                style={{ left: markerLeft }}
+                              >
+                                <div className="w-1.5 h-1.5 bg-slate-700 rounded-full" />
+                              </div>
+                            </div>
+                            <div className="flex justify-between text-[8px] text-slate-400 mt-1 font-mono">
+                              <span>Thiếu cân (&lt;18.5)</span>
+                              <span>Cân đối (18.5-25)</span>
+                              <span>Thừa cân (&ge;25)</span>
+                            </div>
+
+                            <div className="mt-2.5 pt-2 border-t border-slate-100/50 flex flex-col">
+                              <button 
+                                onClick={() => setShowBmiInfo(!showBmiInfo)}
+                                className="flex items-center gap-1 px-2 py-1 text-[9px] font-bold text-slate-500 hover:text-emerald-600 hover:bg-emerald-50/50 rounded transition-all duration-200 cursor-pointer w-max"
+                              >
+                                <Info size={11} className={`${showBmiInfo ? 'text-emerald-500' : 'text-slate-400'} shrink-0`} />
+                                <span>WHO standards info</span>
+                              </button>
+
+                              <AnimatePresence>
+                                {showBmiInfo && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="overflow-hidden text-[9px] text-slate-500 space-y-1 bg-white p-2 rounded-lg border border-slate-100 mt-1.5 leading-relaxed shadow-sm"
+                                  >
+                                    <p className="font-bold text-slate-700">Khuyến nghị từ Tổ chức Y tế Thế giới (WHO):</p>
+                                    {bmiVal < 18.5 && (
+                                      <p>
+                                        <span className="font-semibold text-blue-600">Thiếu cân (BMI &lt; 18.5):</span> Có nguy cơ cao về loãng xương, thiếu chất, mệt mỏi và hệ miễn dịch kém. Hãy chú trọng nạp calo lành mạnh, đạm chất lượng cao và chất béo tốt.
+                                      </p>
+                                    )}
+                                    {bmiVal >= 18.5 && bmiVal < 25 && (
+                                      <p>
+                                        <span className="font-semibold text-emerald-600">Cân đối (BMI 18.5 - 24.9):</span> Thể trạng lý tưởng, giảm thiểu nguy cơ mắc tim mạch và tiểu đường. Bạn hãy tiếp tục duy trì chế độ dinh dưỡng và vận động hiện tại!
+                                      </p>
+                                    )}
+                                    {bmiVal >= 25 && (
+                                      <p>
+                                        <span className="font-semibold text-rose-600">Thừa cân / Béo phì (BMI &ge; 25):</span> Tăng rủi ro huyết áp cao, đau tim, đột quỵ và tiểu đường type 2. Kiểm soát chặt lượng calo và hoạt động thể chất đều đặn được khuyến cáo khuyến nghị.
+                                      </p>
+                                    )}
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <hr className="border-slate-100" />
                     <div className="space-y-2">
@@ -4002,7 +3936,7 @@ export default function App() {
               </aside>
 
               {/* Main Content: Meal Plan */}
-              <main className="col-span-12 lg:col-span-9 flex flex-col gap-6">
+              <main className="col-span-12 lg:col-span-8 flex flex-col gap-6">
                 <DaySelector selectedDate={selectedDate} onSelect={setSelectedDate} />
 
                 {/* Health Overview & Compliance Trend Card */}
@@ -4359,14 +4293,17 @@ export default function App() {
                                 {!isLogged ? (
                                   <>
                                     <button 
-                                      onClick={() => logCompliance(m.type as any, 'followed')}
-                                      className="flex-[2] text-[10px] bg-white border border-slate-200 rounded p-2 text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-600 transition-colors"
+                                      onClick={async () => {
+                                        await logCompliance(m.type as any, 'followed');
+                                        setActiveMoodLogMeal(m.type as any);
+                                      }}
+                                      className="flex-[2] text-[10px] bg-white border border-slate-200 rounded p-2 text-slate-500 font-bold hover:border-emerald-500 hover:text-emerald-600 transition-colors cursor-pointer"
                                     >
                                       Hoàn tất
                                     </button>
                                     <button 
                                       onClick={() => setEditingMeal({ type: m.type, content: m.content })}
-                                      className="flex-1 text-[10px] bg-slate-50 border border-slate-100 rounded p-2 text-slate-400 font-bold hover:bg-slate-100 transition-colors"
+                                      className="flex-1 text-[10px] bg-slate-50 border border-slate-100 rounded p-2 text-slate-400 font-bold hover:bg-slate-100 transition-colors cursor-pointer"
                                     >
                                       Sửa
                                     </button>
@@ -4374,12 +4311,22 @@ export default function App() {
                                 ) : (
                                   <div className="w-full flex items-center justify-between text-[10px] bg-emerald-100 border border-emerald-200 rounded p-2 text-emerald-700 font-bold">
                                     <span>ĐÃ ĂN</span>
-                                    <button 
-                                      onClick={() => setEditingMeal({ type: m.type, content: m.content })}
-                                      className="text-emerald-600 underline font-bold uppercase"
-                                    >
-                                      Sửa lại
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                      <button 
+                                        onClick={() => setActiveMoodLogMeal(m.type as any)}
+                                        className="text-emerald-600 hover:text-emerald-800 underline font-extrabold uppercase cursor-pointer"
+                                        title="Ghi nhật ký tâm trạng"
+                                      >
+                                        {lang === 'en' ? 'Mood' : 'Tâm trạng'}
+                                      </button>
+                                      <span className="text-emerald-300">|</span>
+                                      <button 
+                                        onClick={() => setEditingMeal({ type: m.type, content: m.content })}
+                                        className="text-emerald-600 hover:text-emerald-800 underline font-extrabold uppercase cursor-pointer"
+                                      >
+                                        Sửa lại
+                                      </button>
+                                    </div>
                                   </div>
                                 )}
                               </div>
@@ -4409,6 +4356,24 @@ export default function App() {
                     onClose={() => setSelectedMealDetail(null)} 
                     meal={selectedMealDetail} 
                   />
+
+                  {activeMoodLogMeal && (
+                    <MoodLogger 
+                      lang={lang}
+                      mealType={activeMoodLogMeal}
+                      mealLabel={
+                        activeMoodLogMeal === 'breakfast' ? (lang === 'vi' ? 'Bữa sáng' : 'Breakfast') :
+                        activeMoodLogMeal === 'lunch' ? (lang === 'vi' ? 'Bữa trưa' : 'Lunch') :
+                        activeMoodLogMeal === 'snacks' ? (lang === 'vi' ? 'Bữa phụ' : 'Snack') :
+                        (lang === 'vi' ? 'Bữa tối' : 'Dinner')
+                      }
+                      existingLog={logs.find(l => l.mealType === activeMoodLogMeal && l.date === selectedDate)}
+                      onSave={async (mood, note) => {
+                        await handleSaveMoodLog(activeMoodLogMeal, mood, note);
+                      }}
+                      onClose={() => setActiveMoodLogMeal(null)}
+                    />
+                  )}
                 </section>
 
                 <RecipeSearch 
@@ -4417,6 +4382,16 @@ export default function App() {
                   onUpdateMealPlan={(p) => setMealPlan(p)}
                   lang={lang}
                   selectedDate={selectedDate}
+                />
+
+                <MoodAnalysisPanel 
+                  lang={lang}
+                  profile={profile}
+                  mealPlan={mealPlan}
+                  logs={logs.filter(l => l.date === selectedDate)}
+                  selectedDate={selectedDate}
+                  user={user}
+                  db={db}
                 />
 
                 <HealthArticlesSection 

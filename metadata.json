@@ -2,5 +2,7 @@
   "name": "NutriCare – Trợ lý dinh dưỡng cho người bệnh",
   "description": "Ứng dụng hỗ trợ dinh dưỡng cá nhân hóa dựa trên bệnh lý (Dạ dày, Đại tràng, Tiểu đường,...) và hồ sơ sức khỏe người dùng.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

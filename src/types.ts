@@ -96,6 +96,8 @@ export interface ComplianceLog {
   mealType: 'breakfast' | 'lunch' | 'dinner' | 'snacks';
   status: 'followed' | 'skipped' | 'modified';
   timestamp: string;
+  mood?: 'happy' | 'calm' | 'tired' | 'stressed' | 'anxious' | 'depressed';
+  moodNote?: string;
 }
 
 export interface Disease {
