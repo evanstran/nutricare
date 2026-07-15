@@ -1,9 +1,20 @@
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import path from "path";
+import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 
 dotenv.config();
+
+// Safe resolution of file paths for both ESM (tsx dev) and CJS (production bundle)
+const resolvedFilename = typeof import.meta !== "undefined" && import.meta.url
+  ? fileURLToPath(import.meta.url)
+  : "";
+const resolvedDirname = resolvedFilename ? path.dirname(resolvedFilename) : process.cwd();
+
+// Provide fallback aliases for compatibility
+const __filename = resolvedFilename;
+const __dirname = resolvedDirname;
 
 async function startServer() {
   const app = express();

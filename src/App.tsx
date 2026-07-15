@@ -2399,6 +2399,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, lang }) => {
   );
 };
 
+const fetchFontAsBase64 = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch font from ${url}`);
+  }
+  const buffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return window.btoa(binary);
+};
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [lang, setLang] = useState<'vi' | 'en'>(() => {
@@ -2438,6 +2453,7 @@ export default function App() {
   const [activeMoodLogMeal, setActiveMoodLogMeal] = useState<'breakfast' | 'lunch' | 'dinner' | 'snacks' | null>(null);
   const [localWaterState, setLocalWaterState] = useState<{ [date: string]: number }>({});
   const [showBmiInfo, setShowBmiInfo] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   const getWaterIntakeForDate = (dateStr: string): number => {
     if (profile?.waterHistory) {
@@ -2531,14 +2547,12 @@ export default function App() {
     return streak;
   };
 
-  const exportWeeklyReportPDF = () => {
+  const exportWeeklyReportPDF = async () => {
     if (!profile) return;
+    setIsExportingPDF(true);
     
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
+    let doc: jsPDF;
+    let usingUnicode = false;
 
     const removeAccents = (str: string): string => {
       if (!str) return '';
@@ -2549,238 +2563,328 @@ export default function App() {
         .replace(/Đ/g, 'D');
     };
 
-    // 1. Branding Header Bar
-    doc.setFillColor(5, 150, 105); 
-    doc.rect(15, 15, 180, 26, 'F');
+    const textVal = (str: string): string => {
+      return usingUnicode ? (str || '') : removeAccents(str);
+    };
 
-    // Title text inside banner
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text('NUTRICARE - BAO CAO TUAN THU SUC KHOE & DINH DUONG', 20, 24);
-    
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text('Bao cao suc khoe de chia se voi bac si - Phien ban thu nghiem CLINICAL BETA', 20, 31);
-    
-    const todayStr = new Date().toLocaleDateString('vi', { year: 'numeric', month: 'numeric', day: 'numeric' });
-    doc.text(`Xuat ngay: ${todayStr}`, 155, 24);
+    const t = (unicodeStr: string, fallbackStr: string): string => {
+      return usingUnicode ? unicodeStr : fallbackStr;
+    };
 
-    // 2. Patient Demographics & Profile
-    doc.setTextColor(30, 41, 59); 
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('THONG TIN NGUOI DUNG (PATIENT PROFILE)', 15, 52);
+    try {
+      doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
 
-    // Draw horizontal line below title
-    doc.setDrawColor(226, 232, 240); 
-    doc.setLineWidth(0.4);
-    doc.line(15, 54, 195, 54);
+      // Fetch Roboto Regular and Medium (Bold) fonts from cdnjs
+      const [regularBase64, mediumBase64] = await Promise.all([
+        fetchFontAsBase64('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf'),
+        fetchFontAsBase64('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Medium.ttf')
+      ]);
 
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(9);
-    
-    const nameLine = `Ho va ten: ${removeAccents(profile.name)}`;
-    const ageLine = `Tuoi: ${profile.age}`;
-    const genderLine = `Gioi tinh: ${profile.gender === 'male' ? 'Nam' : profile.gender === 'female' ? 'Nu' : 'Khac'}`;
-    const physicalLine = `Chieu cao: ${profile.height} cm  |  Can nang: ${profile.weight} kg  |  BMI: ${(profile.weight / ((profile.height / 100) ** 2)).toFixed(1)}`;
-    
-    doc.text(nameLine, 15, 60);
-    doc.text(ageLine, 85, 60);
-    doc.text(genderLine, 135, 60);
-    doc.text(physicalLine, 15, 66);
-
-    const diseasesStr = profile.diseases && profile.diseases.length > 0 ? profile.diseases.join(', ') : 'Khong ghi nhan';
-    const allergiesStr = profile.allergies && profile.allergies.length > 0 ? profile.allergies.join(', ') : 'Khong co';
-    
-    const conditionsText = `Benh ly dang theo doi: ${removeAccents(diseasesStr)}`;
-    const allergiesText = `Di ung thuc pham: ${removeAccents(allergiesStr)}`;
-    const habitsText = `Thoi quen hoat dong: ${profile.activityLevel === 'low' ? 'It van dong' : profile.activityLevel === 'moderate' ? 'Moderate (Binh thuong)' : 'High (Nhieu)'}`;
-
-    doc.text(conditionsText, 15, 72);
-    doc.text(allergiesText, 15, 78);
-    doc.text(habitsText, 15, 84);
-
-    // 3. 7-Day Compliance Summary Metrics
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('KET QUA TUAN THU DINH DUONG (COMPLIANCE OUTCOMES)', 15, 96);
-    doc.line(15, 98, 195, 98);
-
-    const trendDays = get7DayTrendData();
-    const avgCompliance = Math.round(trendDays.reduce((acc, item) => acc + item.compliance, 0) / 7);
-    const activeStreak = calculateStreak(trendDays);
-
-    // Background blocks for metrics
-    doc.setFillColor(248, 250, 252); 
-    doc.rect(15, 102, 85, 18, 'F');
-    doc.setFillColor(236, 253, 245); 
-    doc.rect(110, 102, 85, 18, 'F');
-
-    // Stats Labels & Values
-    doc.setTextColor(71, 85, 105); 
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.text('TI LE TUAN THU TRUNG BINH tuần', 20, 108);
-    doc.text('CHUOI NGAY TUAN THU LIEN TIEP', 115, 108);
-
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(13);
-    doc.setTextColor(15, 118, 110); 
-    doc.text(`${avgCompliance}%`, 20, 115);
-    doc.setTextColor(4, 120, 87); 
-    doc.text(`${activeStreak} Ngay`, 115, 115);
-
-    // Evaluation text
-    doc.setTextColor(30, 41, 59); 
-    doc.setFont('Helvetica', 'italic');
-    doc.setFontSize(8);
-    let evaluationDesc = "Danh gia khoi dau: Hay cham chi theo doi cac bua an de thong so thuc don cua ban duoc chinh xac.";
-    if (avgCompliance >= 80) {
-      evaluationDesc = "Danh gia khoa hoc: XUAT SAC! Qua trinh tuan thu cuc tot, rat tot cho muc tieu giam tai huyet ap/tieu duong.";
-    } else if (avgCompliance >= 50) {
-      evaluationDesc = "Danh gia khoa hoc: KHA TOT! Hoan thanh kha day du thuc don y khoa, giup on dinh the chat dai han.";
-    } else if (avgCompliance > 0) {
-      evaluationDesc = "Danh gia khoa hoc: CAN CO GANG! Hay kiem soat ky calo va han che nap cac cac chat phu gia qua tieu chuan.";
+      // Register regular style
+      doc.addFileToVFS('Roboto-Regular.ttf', regularBase64);
+      doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal');
+      
+      // Register bold style
+      doc.addFileToVFS('Roboto-Medium.ttf', mediumBase64);
+      doc.addFont('Roboto-Medium.ttf', 'Roboto', 'bold');
+      
+      // Use Roboto font
+      doc.setFont('Roboto', 'normal');
+      usingUnicode = true;
+    } catch (error) {
+      console.warn('Failed to load Unicode fonts, falling back to standard Helvetica with non-accented text.', error);
+      // Fallback instance
+      doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+      doc.setFont('Helvetica', 'normal');
+      usingUnicode = false;
     }
-    doc.text(evaluationDesc, 15, 125);
 
-    // 4. Logged Activities Checklist Table
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('NHAT KY LOG BUA AN TRONG 7 NGÀY QUA (7-DAY DIETARY MATRIX)', 15, 135);
-    doc.line(15, 137, 195, 137);
+    try {
+      // 1. Branding Header Bar
+      doc.setFillColor(5, 150, 105); 
+      doc.rect(15, 15, 180, 26, 'F');
 
-    // Table Header
-    doc.setFillColor(241, 245, 249); 
-    doc.rect(15, 140, 180, 8, 'F');
-    
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(8.5);
-    doc.setTextColor(51, 65, 85); 
-    doc.text('Thoi Gian', 18, 145.5);
-    doc.text('Bua Sang', 55, 145.5);
-    doc.text('Bua Trua', 90, 145.5);
-    doc.text('Bua Toi', 125, 145.5);
-    doc.text('Bua Phu', 160, 145.5);
+      // Title text inside banner
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.text(
+        t('NUTRICARE - BÁO CÁO TUÂN THỦ SỨC KHỎE & DINH DƯỠNG', 'NUTRICARE - BAO CAO TUAN THU SUC KHOE & DINH DUONG'), 
+        20, 24
+      );
+      
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(
+        t('Báo cáo sức khỏe để chia sẻ với bác sĩ - Phiên bản thử nghiệm CLINICAL BETA', 'Bao cao suc khoe de chia se voi bac si - Phien ban thu nghiem CLINICAL BETA'), 
+        20, 31
+      );
+      
+      const todayStr = new Date().toLocaleDateString('vi', { year: 'numeric', month: 'numeric', day: 'numeric' });
+      doc.text(t(`Xuất ngày: ${todayStr}`, `Xuat ngay: ${todayStr}`), 155, 24);
 
-    // Table Content
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(8);
-    
-    let tableY = 148;
-    trendDays.forEach((day, index) => {
-      if (index % 2 === 1) {
-        doc.setFillColor(248, 250, 252); 
-        doc.rect(15, tableY, 180, 7, 'F');
-      }
-      
-      const dayLogs = logs.filter(l => l.date === day.dateStr);
-      
-      const getMealStatus = (mType: 'breakfast' | 'lunch' | 'dinner' | 'snacks') => {
-        const found = dayLogs.find(l => l.mealType === mType);
-        if (!found) return 'Chua ghi';
-        if (found.status === 'followed') return 'Tuan thu';
-        if (found.status === 'modified') return 'Thay doi';
-        return 'Bo qua';
-      };
-      
-      const displayDay = removeAccents(day.dayLabel);
-      
-      doc.setTextColor(30, 41, 59);
-      doc.text(displayDay, 18, tableY + 5);
-      
-      const statusB = getMealStatus('breakfast');
-      const statusL = getMealStatus('lunch');
-      const statusD = getMealStatus('dinner');
-      const statusS = getMealStatus('snacks');
-      
-      doc.text(statusB, 55, tableY + 5);
-      doc.text(statusL, 90, tableY + 5);
-      doc.text(statusD, 125, tableY + 5);
-      doc.text(statusS, 160, tableY + 5);
-      
-      tableY += 7;
-    });
-
-    // 5. Active Meal Plan Recommendations
-    if (mealPlan) {
-      doc.setFont('Helvetica', 'bold');
+      // 2. Patient Demographics & Profile
+      doc.setTextColor(30, 41, 59); 
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
       doc.setFontSize(11);
-      doc.setTextColor(30, 41, 59);
-      doc.text('QUY TAC DINH DUONG THEO THE TRANG (NUTRITIONAL ADVISORY)', 15, tableY + 12);
-      doc.line(15, tableY + 14, 195, tableY + 14);
+      doc.text(t('THÔNG TIN NGƯỜI DÙNG (PATIENT PROFILE)', 'THONG TIN NGUOI DUNG (PATIENT PROFILE)'), 15, 52);
 
-      doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.text('NHOM THUC PHAM KHUYEN DUNG (SHOULD EAT):', 15, tableY + 19);
-      doc.setFont('Helvetica', 'normal');
-      
-      const eatItems = mealPlan.shouldEat && mealPlan.shouldEat.length > 0 
-        ? mealPlan.shouldEat.join(', ') 
-        : 'Cac nguoi thuc pham tuoi ngon, thanh dam giau chat xo tu nhien';
-      
-      const eatWrapped = doc.splitTextToSize(removeAccents(eatItems), 180);
-      doc.text(eatWrapped, 15, tableY + 23);
-      
-      const wrapHeightEat = eatWrapped.length * 4.5;
+      // Draw horizontal line below title
+      doc.setDrawColor(226, 232, 240); 
+      doc.setLineWidth(0.4);
+      doc.line(15, 54, 195, 54);
 
-      doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.text('THUC PHAM HAN CHE VA TRANH (SHOULD AVOID):', 15, tableY + 25 + wrapHeightEat);
-      doc.setFont('Helvetica', 'normal');
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'normal');
+      doc.setFontSize(9);
       
-      const avoidItems = mealPlan.shouldAvoid && mealPlan.shouldAvoid.length > 0 
-        ? mealPlan.shouldAvoid.join(', ') 
-        : 'Do an giau chat beo bao hoa, sodium vuot muc cho phep';
+      const nameLine = t(`Họ và tên: ${profile.name}`, `Ho va ten: ${removeAccents(profile.name)}`);
+      const ageLine = t(`Tuổi: ${profile.age}`, `Tuoi: ${profile.age}`);
+      const genderLine = t(
+        `Giới tính: ${profile.gender === 'male' ? 'Nam' : profile.gender === 'female' ? 'Nữ' : 'Khác'}`, 
+        `Gioi tinh: ${profile.gender === 'male' ? 'Nam' : profile.gender === 'female' ? 'Nu' : 'Khac'}`
+      );
+      const bmi = (profile.weight / ((profile.height / 100) ** 2)).toFixed(1);
+      const physicalLine = t(
+        `Chiều cao: ${profile.height} cm  |  Cân nặng: ${profile.weight} kg  |  BMI: ${bmi}`,
+        `Chieu cao: ${profile.height} cm  |  Can nang: ${profile.weight} kg  |  BMI: ${bmi}`
+      );
+      
+      doc.text(nameLine, 15, 60);
+      doc.text(ageLine, 85, 60);
+      doc.text(genderLine, 135, 60);
+      doc.text(physicalLine, 15, 66);
+
+      const diseasesStr = profile.diseases && profile.diseases.length > 0 ? profile.diseases.join(', ') : t('Không ghi nhận', 'Khong ghi nhan');
+      const allergiesStr = profile.allergies && profile.allergies.length > 0 ? profile.allergies.join(', ') : t('Không có', 'Khong co');
+      
+      const conditionsText = t(`Bệnh lý đang theo dõi: ${diseasesStr}`, `Benh ly dang theo doi: ${removeAccents(diseasesStr)}`);
+      const allergiesText = t(`Dị ứng thực phẩm: ${allergiesStr}`, `Di ung thuc pham: ${removeAccents(allergiesStr)}`);
+      const habitsText = t(
+        `Thói quen hoạt động: ${profile.activityLevel === 'low' ? 'Ít vận động' : profile.activityLevel === 'moderate' ? 'Bình thường' : 'Nhiều'}`,
+        `Thoi quen hoat dong: ${profile.activityLevel === 'low' ? 'It van dong' : profile.activityLevel === 'moderate' ? 'Moderate (Binh thuong)' : 'High (Nhieu)'}`
+      );
+
+      doc.text(conditionsText, 15, 72);
+      doc.text(allergiesText, 15, 78);
+      doc.text(habitsText, 15, 84);
+
+      // 3. 7-Day Compliance Summary Metrics
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(t('KẾT QUẢ TUÂN THỦ DINH DƯỠNG (COMPLIANCE OUTCOMES)', 'KET QUA TUAN THU DINH DUONG (COMPLIANCE OUTCOMES)'), 15, 96);
+      doc.line(15, 98, 195, 98);
+
+      const trendDays = get7DayTrendData();
+      const avgCompliance = Math.round(trendDays.reduce((acc, item) => acc + item.compliance, 0) / 7);
+      const activeStreak = calculateStreak(trendDays);
+
+      // Background blocks for metrics
+      doc.setFillColor(248, 250, 252); 
+      doc.rect(15, 102, 85, 18, 'F');
+      doc.setFillColor(236, 253, 245); 
+      doc.rect(110, 102, 85, 18, 'F');
+
+      // Stats Labels & Values
+      doc.setTextColor(71, 85, 105); 
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.text(t('TỶ LỆ TUÂN THỦ TRUNG BÌNH TUẦN', 'TI LE TUAN THU TRUNG BINH tuan'), 20, 108);
+      doc.text(t('CHUỖI NGÀY TUÂN THỦ LIÊN TIẾP', 'CHUOI NGAY TUAN THU LIEN TIEP'), 115, 108);
+
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(15, 118, 110); 
+      doc.text(`${avgCompliance}%`, 20, 115);
+      doc.setTextColor(4, 120, 87); 
+      doc.text(t(`${activeStreak} Ngày`, `${activeStreak} Ngay`), 115, 115);
+
+      // Evaluation text
+      doc.setTextColor(30, 41, 59); 
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'italic');
+      doc.setFontSize(8);
+      let evaluationDesc = t(
+        "Đánh giá khởi đầu: Hãy chăm chỉ theo dõi các bữa ăn để thông số thực đơn của bạn được chính xác.",
+        "Danh gia khoi dau: Hay cham chi theo doi cac bua an de thong so thuc don cua ban duoc chinh xac."
+      );
+      if (avgCompliance >= 80) {
+        evaluationDesc = t(
+          "Đánh giá khoa học: XUẤT SẮC! Quá trình tuân thủ cực tốt, rất tốt cho mục tiêu giảm tải huyết áp/tiểu đường.",
+          "Danh gia khoa hoc: XUAT SAC! Qua trinh tuan thu cuc tot, rat tot cho muc tieu giam tai huyet ap/tieu duong."
+        );
+      } else if (avgCompliance >= 50) {
+        evaluationDesc = t(
+          "Đánh giá khoa học: KHÁ TỐT! Hoàn thành khá đầy đủ thực đơn y khoa, giúp ổn định thể chất dài hạn.",
+          "Danh gia khoa hoc: KHA TOT! Hoan thanh kha day du thuc don y khoa, giup on dinh the chat dai han."
+        );
+      } else if (avgCompliance > 0) {
+        evaluationDesc = t(
+          "Đánh giá khoa học: CẦN CỐ GẮNG! Hãy kiểm soát kỹ calo và hạn chế nạp các chất phụ gia quá tiêu chuẩn.",
+          "Danh gia khoa hoc: CAN CO GANG! Hay kiem soat ky calo va han che nap cac cac chat phu gia qua tieu chuan."
+        );
+      }
+      doc.text(evaluationDesc, 15, 125);
+
+      // 4. Logged Activities Checklist Table
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
+      doc.setFontSize(11);
+      doc.text(t('NHẬT KÝ BỮA ĂN TRONG 7 NGÀY QUA (7-DAY DIETARY MATRIX)', 'NHAT KY LOG BUA AN TRONG 7 NGAY QUA (7-DAY DIETARY MATRIX)'), 15, 135);
+      doc.line(15, 137, 195, 137);
+
+      // Table Header
+      doc.setFillColor(241, 245, 249); 
+      doc.rect(15, 140, 180, 8, 'F');
+      
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(51, 65, 85); 
+      doc.text(t('Thời Gian', 'Thoi Gian'), 18, 145.5);
+      doc.text(t('Bữa Sáng', 'Bua Sang'), 55, 145.5);
+      doc.text(t('Bữa Trưa', 'Bua Trua'), 90, 145.5);
+      doc.text(t('Bữa Tối', 'Bua Toi'), 125, 145.5);
+      doc.text(t('Bữa Phụ', 'Bua Phu'), 160, 145.5);
+
+      // Table Content
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'normal');
+      doc.setFontSize(8);
+      
+      let tableY = 148;
+      trendDays.forEach((day, index) => {
+        if (index % 2 === 1) {
+          doc.setFillColor(248, 250, 252); 
+          doc.rect(15, tableY, 180, 7, 'F');
+        }
         
-      const avoidWrapped = doc.splitTextToSize(removeAccents(avoidItems), 180);
-      doc.text(avoidWrapped, 15, tableY + 29 + wrapHeightEat);
-      
-      const wrapHeightAvoid = avoidWrapped.length * 4.5;
+        const dayLogs = logs.filter(l => l.date === day.dateStr);
+        
+        const getMealStatus = (mType: 'breakfast' | 'lunch' | 'dinner' | 'snacks') => {
+          const found = dayLogs.find(l => l.mealType === mType);
+          if (!found) return t('Chưa ghi', 'Chua ghi');
+          if (found.status === 'followed') return t('Tuân thủ', 'Tuan thu');
+          if (found.status === 'modified') return t('Thay đổi', 'Thay doi');
+          return t('Bỏ qua', 'Bo qua');
+        };
+        
+        const displayDay = textVal(day.dayLabel);
+        
+        doc.setTextColor(30, 41, 59);
+        doc.text(displayDay, 18, tableY + 5);
+        
+        const statusB = getMealStatus('breakfast');
+        const statusL = getMealStatus('lunch');
+        const statusD = getMealStatus('dinner');
+        const statusS = getMealStatus('snacks');
+        
+        doc.text(statusB, 55, tableY + 5);
+        doc.text(statusL, 90, tableY + 5);
+        doc.text(statusD, 125, tableY + 5);
+        doc.text(statusS, 160, tableY + 5);
+        
+        tableY += 7;
+      });
 
-      // Doctor note block
-      const noteY = tableY + 33 + wrapHeightEat + wrapHeightAvoid;
-      doc.setFillColor(254, 251, 240); 
-      doc.rect(15, noteY, 180, 16, 'F');
-      doc.setDrawColor(253, 230, 138); 
-      doc.rect(15, noteY, 180, 16);
+      // 5. Active Meal Plan Recommendations
+      if (mealPlan) {
+        doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.setTextColor(30, 41, 59);
+        doc.text(t('QUY TẮC DINH DƯỠNG THEO THỂ TRẠNG (NUTRITIONAL ADVISORY)', 'QUY TAC DINH DUONG THEO THE TRANG (NUTRITIONAL ADVISORY)'), 15, tableY + 12);
+        doc.line(15, tableY + 14, 195, tableY + 14);
 
-      doc.setTextColor(146, 64, 14); 
-      doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.text('KHUYEN CAO Y TE QUAN TRONG (CLINICAL DISCLAIMER):', 18, noteY + 5);
-      
-      doc.setFont('Helvetica', 'normal');
+        doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text(t('NHÓM THỰC PHẨM KHUYÊN DÙNG (SHOULD EAT):', 'NHOM THUC PHAM KHUYEN DUNG (SHOULD EAT):'), 15, tableY + 19);
+        doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'normal');
+        
+        const eatItems = mealPlan.shouldEat && mealPlan.shouldEat.length > 0 
+          ? mealPlan.shouldEat.join(', ') 
+          : t('Các nguồn thực phẩm tươi ngon, thanh đạm giàu chất xơ tự nhiên', 'Cac nguoi thuc pham tuoi ngon, thanh dam giau chat xo tu nhien');
+        
+        const eatWrapped = doc.splitTextToSize(textVal(eatItems), 180);
+        doc.text(eatWrapped, 15, tableY + 23);
+        
+        const wrapHeightEat = eatWrapped.length * 4.5;
+
+        doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text(t('THỰC PHẨM HẠN CHẾ VÀ TRÁNH (SHOULD AVOID):', 'THUC PHAM HAN CHE VA TRANH (SHOULD AVOID):'), 15, tableY + 25 + wrapHeightEat);
+        doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'normal');
+        
+        const avoidItems = mealPlan.shouldAvoid && mealPlan.shouldAvoid.length > 0 
+          ? mealPlan.shouldAvoid.join(', ') 
+          : t('Đồ ăn giàu chất béo bão hòa, sodium vượt mức cho phép', 'Do an giau chat beo bao hoa, sodium vuot muc cho phep');
+          
+        const avoidWrapped = doc.splitTextToSize(textVal(avoidItems), 180);
+        doc.text(avoidWrapped, 15, tableY + 29 + wrapHeightEat);
+        
+        const wrapHeightAvoid = avoidWrapped.length * 4.5;
+
+        // Doctor note block
+        const noteY = tableY + 33 + wrapHeightEat + wrapHeightAvoid;
+        doc.setFillColor(254, 251, 240); 
+        doc.rect(15, noteY, 180, 16, 'F');
+        doc.setDrawColor(253, 230, 138); 
+        doc.rect(15, noteY, 180, 16);
+
+        doc.setTextColor(146, 64, 14); 
+        doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text(t('KHUYẾN CÁO Y TẾ QUAN TRỌNG (CLINICAL DISCLAIMER):', 'KHUYEN CAO Y TE QUAN TRONG (CLINICAL DISCLAIMER):'), 18, noteY + 5);
+        
+        doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'normal');
+        doc.setFontSize(7);
+        const disclaimerText = t(
+          'NutriCare cung cấp các thực đơn và chỉ số calo dự kiến phù hợp các bệnh nền hỗ trợ tối ưu tự do. Hãy chia sẻ ngay file PDF báo cáo lâm sàng này cho Bác sĩ chuyên khoa khám bệnh của bạn để phối hợp chẩn đoán, điều chỉnh khẩu phần lâm sàng an toàn và thực tế đúng nghĩa từng giai đoạn.',
+          'NutriCare cung cap cac thuc don va chi so calo du kien phu hop cac benh nen ho tro toi uu tu do. Hay chia se ngay file PDF bao cao lam sang nay cho Bac si chuyen khoa khem benh cua ban de phoi hop chan doan, dieu chinh khau phan lam sang an toan va thuc te dung nghia tung giai doan.'
+        );
+        doc.text(doc.splitTextToSize(disclaimerText, 174), 18, noteY + 9);
+      } else {
+        const noteY = tableY + 12;
+        doc.setFillColor(254, 251, 240); 
+        doc.rect(15, noteY, 180, 16, 'F');
+        doc.setDrawColor(253, 230, 138);
+        doc.rect(15, noteY, 180, 16);
+
+        doc.setTextColor(146, 64, 14);
+        doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text(t('KHUYẾN CÁO Y TẾ QUAN TRỌNG (CLINICAL DISCLAIMER):', 'KHUYEN CAO Y TE QUAN TRONG (CLINICAL DISCLAIMER):'), 18, noteY + 5);
+        
+        doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'normal');
+        doc.setFontSize(7);
+        const disclaimerText = t(
+          'NutriCare thiết kế biểu đồ y khoa cho mục đích phân tích hành vi ăn uống y khoa hỗ trợ bệnh lý nền. Các thông tin không thay thế cho chẩn đoán phẫu thuật, duyệt y khoa chuyên nghiệp. Vui lòng đưa báo cáo này cho Bác sĩ để phân tích chính xác.',
+          'NutriCare thiet ke bieu do y khoa cho muc dich phan tich hanh vi an uong y khoa ho tro benh ly nen. Cac thong tin khong thay the cho chan doan phau thuat, duyet y khoa chuyen nghiep. Vui long dua bao cao nay cho Bac si de phan tich chinh xac.'
+        );
+        doc.text(doc.splitTextToSize(disclaimerText, 174), 18, noteY + 9);
+      }
+
+      // 6. Footer signature
+      doc.setTextColor(148, 163, 184); 
+      doc.setFont(usingUnicode ? 'Roboto' : 'Helvetica', 'italic');
       doc.setFontSize(7);
-      const disclaimerText = 'NutriCare cung cap cac thuc don va chi so calo du kien phu hop cac benh nen ho tro toi uu tu do. Hay chia se ngay file PDF bao cao lam sang nay cho Bac si chuyen khoa khem benh cua ban de phoi hop chan doan, dieu chinh khau phan lam sang an toan va thuc te dung nghia tung giai doan.';
-      doc.text(doc.splitTextToSize(disclaimerText, 174), 18, noteY + 9);
-    } else {
-      const noteY = tableY + 12;
-      doc.setFillColor(254, 251, 240); 
-      doc.rect(15, noteY, 180, 16, 'F');
-      doc.setDrawColor(253, 230, 138);
-      doc.rect(15, noteY, 180, 16);
+      doc.text(
+        t('Cảm ơn bạn đã tin dùng hệ thống NutriCare Health AI Companion.', 'Cam on ban da tin dung he thong NutriCare Health AI Companion.'), 
+        15, 282
+      );
+      doc.text(
+        t('Báo cáo tương thích cho các thiết bị y tế và ghi chép lâm sàng.', 'Bao cao tuong thich cho cac thiet bi y te va ghi chep lam sang.'), 
+        130, 282
+      );
 
-      doc.setTextColor(146, 64, 14);
-      doc.setFont('Helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.text('KHUYEN CAO Y TE QUAN TRONG (CLINICAL DISCLAIMER):', 18, noteY + 5);
-      
-      doc.setFont('Helvetica', 'normal');
-      doc.setFontSize(7);
-      const disclaimerText = 'NutriCare thiet ke bieu do y khoa cho muc dich phan tich hanh vi an uong y khoa ho tro benh ly nen. Cac thong tin khong thay the cho chan doan phau thuat, duyet y khoa chuyen nghiep. Vui long dua bao cao nay cho Bac si de phan tich chinh xac.';
-      doc.text(doc.splitTextToSize(disclaimerText, 174), 18, noteY + 9);
+      doc.save(`NutriCare_Bao_Cao_Suc_Khoe_${profile.name.replace(/\s+/g, '_')}.pdf`);
+    } catch (e) {
+      console.error('Error generating PDF:', e);
+    } finally {
+      setIsExportingPDF(false);
     }
-
-    // 6. Footer signature
-    doc.setTextColor(148, 163, 184); 
-    doc.setFont('Helvetica', 'italic');
-    doc.setFontSize(7);
-    doc.text('Cam on ban da tin dung he thong NutriCare Health AI Companion.', 15, 282);
-    doc.text('Bao cao tuong thich cho cac thiet bi y te va ghi chep lam sang.', 130, 282);
-
-    doc.save(`NutriCare_Bao_Cao_Suc_Khoe_${profile.name.replace(/\s+/g, '_')}.pdf`);
   };
 
   useEffect(() => {
@@ -3952,11 +4056,21 @@ export default function App() {
                     
                     <div className="flex items-center gap-3">
                       <button
+                        disabled={isExportingPDF}
                         onClick={exportWeeklyReportPDF}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm shadow-emerald-50 transition-all cursor-pointer"
+                        className={`flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl text-[10px] font-black uppercase tracking-wider shadow-sm shadow-emerald-50 transition-all cursor-pointer ${isExportingPDF ? 'opacity-70 cursor-not-allowed' : ''}`}
                       >
-                        <FileDown size={12} />
-                        {lang === 'vi' ? 'Xuất báo cáo tuần' : 'Export PDF'}
+                        {isExportingPDF ? (
+                          <>
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            {lang === 'vi' ? 'Đang xuất...' : 'Exporting...'}
+                          </>
+                        ) : (
+                          <>
+                            <FileDown size={12} />
+                            {lang === 'vi' ? 'Xuất báo cáo tuần' : 'Export PDF'}
+                          </>
+                        )}
                       </button>
 
                       {(() => {
